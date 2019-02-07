@@ -3,9 +3,9 @@ import java.io.*;
 
 public class StringInterleave {
 	public static void main(String[] args){
-		String a = "";
-		String b = "";
-        String c = "";
+		String a = "aab";
+		String b = "aacx";
+        String c = "aacaaab";
 
         boolean areInterleaved = isInterleaved(a,b,c);
         System.out.println("are strings " + a + " and " + b +" interleaved? " + areInterleaved);
