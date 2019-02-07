@@ -27,24 +27,34 @@ public class UglyNumberDP {
     	int[] uglyNumbers = new int[n]; // an array for holding the first n ugly numbers
     	uglyNumbers[0] = 1; // initialize first ugly number
 
-    	int uglyPointer2, uglypointer3, uglyPointer5 = 0;  // this will determine what multiple x(which previous ugly number) to multiple 2,3 or 5 with.
-        int[] uglyPointers = new int[3];
-        uglyPointers[0] = uglyPointer2;
-        uglyPointers[1] = uglypointer3;
-        uglyPointers[2] = uglyPointer5;
+        // this will determine what multiple x(which previous ugly number) to multiple 2,3 or 5 with.
+    	int uglyPointer2 = 0;
+    	int uglypointer3 = 0;
+    	int uglyPointer5 = 0;  
+        Map<Integer, Integer> uglyPointers = new HashMap<>();
+        uglyPointers.put(2,uglyPointer2);
+        uglyPointers.put(3,uglypointer3);
+        uglyPointers.put(5,uglyPointer5);
 
     	for(int i = 1; i < uglyNumbers.length; i++){
     		int minuglyNumber = Integer.MAX_VALUE;
-    		int minUglyPointer = 0;
+    		int minUglyPointer = uglyPointers.get(2);
     		// the next ugly number is going to be the smallest product of the previous ugly number and either 2,3, or 5.
-    		for(int j = 0; j < uglyPointers.length; j++){
-    			int potentialUglyNumber = uglyPointers[j]*uglyNumbers[i-1];
+    		for(Integer key : uglyPointers.keySet()){
+    			int potentialUglyNumber = uglyNumbers[uglyPointers.get(key)]*key;
+    			if(potentialUglyNumber == uglyNumbers[i -1]){
+    				uglyPointers.put(key,uglyPointers.get(key) + 1);
+    				potentialUglyNumber = uglyNumbers[uglyPointers.get(key)]*key;
+    			}
     			if(potentialUglyNumber < minuglyNumber){
     				minuglyNumber = potentialUglyNumber;
-    				minUglyPointer = j;
+    				minUglyPointer = key;
     			}
+
+
     		}
-    		uglyPointers[minUglyPointer] += 1;// update the prime(either 2,3 or 5) that resulted in the next ugly pointer. so that this ugly number will be the next multiple used in finding the next ugly number with the prime
+    		uglyPointers.put(minUglyPointer,uglyPointers.get(minUglyPointer) + 1);// update the prime(either 2,3 or 5) that resulted in the next ugly pointer. so that this ugly number will be the next multiple used in finding the next ugly number with the prime
+    		uglyNumbers[i] = minuglyNumber;
     	}
 
         return uglyNumbers[n-1];
