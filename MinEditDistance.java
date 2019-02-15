@@ -7,7 +7,7 @@ class MEDInstance {
 		int i;
 		int j;
 
-		public MEDInstance(int i,j){
+		public MEDInstance(int i,int j){
 			this.i = i;
 			this.j = j;
 		}
@@ -17,6 +17,12 @@ class Edit{
 	char token;
 	int index;
 	String action;
+
+	public Edit(char token, int index, String action){
+        this.token = token;
+        this.index = index;
+        this.action = action;
+	}
 }
 
 public class MinEditDistance{
@@ -33,21 +39,21 @@ public class MinEditDistance{
 		runMED(a1,b1);
 	}
 
-	public static void runMED(String a, String b){
+	public static void runMED(String a1, String b1){
 		System.out.println("----------Length of Minimum Edit Distance using Top Down Approach ----------");
         int lcsLengthTopDown = getMinEditDistanceTopDown(a1, b1);
-        System.out.println("Length of MED to convert " + a + " to " + b + " --> " + lcsLengthTopDown);
+        System.out.println("Length of MED to convert " + a1 + " to " + b1 + " --> " + lcsLengthTopDown);
 
 
 		System.out.println("----------Length of Minimum Edit distance using Bottom Up Approach ----------");
 		int lcsLengthBottomUp = getMinEditDistanceBottomUp(a1, b1);
-		System.out.println("Length of MED to convert " + a + " to " + b + " --> " + lcsLengthBottomUp);
+		System.out.println("Length of MED to convert " + a1 + " to " + b1 + " --> " + lcsLengthBottomUp);
 
 
 		System.out.println("----------Minimum Edits ----------");
 		List<Edit> lcs = getMinEditDistanceChars(a1, b1);
 		Collections.reverse(lcs);
-		System.out.print("Minimum Edit required to convert string " + a + " into " + b + " --> ");
+		System.out.print("Minimum Edit required to convert string " + a1 + " into " + b1 + " --> ");
 		printList(lcs);
 
 	}
@@ -72,9 +78,9 @@ public class MinEditDistance{
         System.out.println("]");
 	}
 	private static int getMinEditDistanceTopDown(MEDInstance medInstance, Map<MEDInstance, Integer> dict){
-		if(medInstance.a.charAt(medInstance.i) == a.length() - 1){
+		if(medInstance.a.charAt(medInstance.i) == medInstance.a.length() - 1){
 			return medInstance.b.length() - medInstance.j - 1;
-		} else if(medInstance.b.charAt(medInstance.j) == b.length() - 1) {
+		} else if(medInstance.b.charAt(medInstance.j) == medInstance.b.length() - 1) {
 			return medInstance.a.length() - medInstance.i - 1;
 		} else {
 			char aChar = medInstance.a.charAt(0);
@@ -99,13 +105,14 @@ public class MinEditDistance{
 			}
 
 			dict.put(medInstance, minEdit);
+			return minEdit;
 		}
 
 	}
 
 	public static int getMinEditDistanceBottomUp(String a, String b) {
 
-		int[][] memoTable = int[a.length() + 1][b.length() + 1];
+		int[][] memoTable = new int[a.length()+1][b.length() + 1];
 		//basecase
 		for(int i = 0; i < memoTable.length; i++){
 			memoTable[i][0] = i;
@@ -118,7 +125,7 @@ public class MinEditDistance{
 		//recursive cases
 		for(int i = 1; i < memoTable.length; i++) {
 			for(int j = 1; j < memoTable[i].length; j++) {
-				if(a.charAt(i-1) == b.charAt(b)){
+				if(a.charAt(i-1) == b.charAt(j-1)){
 					memoTable[i][j] = memoTable[i-1][j-1];
 				} else {
 					memoTable[i][j] = 1 + Math.min(memoTable[i-1][j], memoTable[i][j-1]);
@@ -130,7 +137,7 @@ public class MinEditDistance{
 	}
 
     public static List<Edit> getMinEditDistanceChars(String a, String b) {
-    	int[][] memoTable = int[a.length() + 1][b.length() + 1];
+    	int[][] memoTable = new int[a.length() + 1][b.length() + 1];
 		//basecase
 		for(int i = 0; i < memoTable.length; i++){
 			memoTable[i][0] = i;
@@ -143,7 +150,7 @@ public class MinEditDistance{
 		//recursive cases
 		for(int i = 1; i < memoTable.length; i++) {
 			for(int j = 1; j < memoTable[i].length; j++) {
-				if(a.charAt(i-1) == b.charAt(b)){
+				if(a.charAt(i-1) == b.charAt(j-1)){
 					memoTable[i][j] = memoTable[i-1][j-1];
 				} else {
 					memoTable[i][j] = 1 + Math.min(memoTable[i-1][j], memoTable[i][j-1]);
