@@ -15,10 +15,11 @@ class Vertex {
 		return forbiddenColors.contains(color);
 	}
 
-}
+} 
 
 public class ColoredGraph{
 	public static void main(String[] args){
+		//create your graph and see how it works
 
 	}
 
