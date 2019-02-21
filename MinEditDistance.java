@@ -182,4 +182,20 @@ public class MinEditDistance{
         }
         return minEdits;
 	}
+
+	public static int getMEDGivenLCS(String commonSub, String a, String b){
+		String c = a.length() > b.length() ? a : b;
+        int subPointer = 0;
+        int i = 0;
+        int minEdit = 0;
+		while(i <= c.length()){
+			if(commonSub.charAt(subPointer) != c.charAt(i)){
+				minEdit += 1;
+
+			}
+			subPointer+=1;
+			i += 1;
+		}
+		return minEdit;
+	}
 }
