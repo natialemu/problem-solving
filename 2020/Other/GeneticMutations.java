@@ -3,18 +3,30 @@ import java.util.*;
 import java.io.*;
 
 /**
+
+Problem definition:
 The goal is to mutate the original sequence of genes, 'start', to 'end'. However, each mutated string
 must be in the gene bank. 
 
+
+Input constraints:
 start & end: sequence of 'A', 'T', 'C', 'G'
-bank: is a collection of strings
+bank: is a collection of strings of simillar structure to that of 'start' & 'end'
 the length of start is equal to the length of end. Also each gene sequence in the bank has the same length (same as start & end).
 Two requirements:
 	1. return the minimum number of mutations. return -1 if it is not possible
-	2. return the sequence of mutations that led to the final mutation. return an empty list if not possible.
-Approach:
+	2. return the sequence of mutations that led to the final mutation. return an empty list if that's not possible.
 
+Input structure:
+T
+start End
+n
+GeneInBank1
+GeneInBank2
+GeneInBankn
 
+Test cases:
+3
 AACCGGTT AACCGGTA
 1
 AACCGGTA
@@ -23,6 +35,12 @@ AACCGGTT AAACGGTA
 AACCGGTA
 AACCGCTA
 AAACGGTA
+AAAAACCC AACCCCCC
+3
+AAAACCCC
+AAACCCCC
+AACCCCCC
+
 **/
 
 class Result {
@@ -34,22 +52,63 @@ class Result {
 		this.geneSequence = geneSequence;
 	}
 }
-
+class TrieNode {
+	char currentChar;
+	boolean wordEnds;
+	TrieNode forwardLink;
+	TrieNode leftLink;
+	TrieNode rightLink;
+}
 class GeneBank {
-	String[] bank;
+	TrieNode root;
 
 	public GeneBank(String[] bank) {
-		this.bank = bank;
+		for (String word : bank) {
+			root = insert(root, word, 0);
+		}
+		
 	}
+
+	private TrieNode insert(TrieNode current, String word, int currIndex) {
+		char currentChar = word.charAt(currIndex);
+		if (current == null) {
+			current = new TrieNode();
+			current.currentChar = currentChar;
+		}
+
+		if (currentChar < current.currentChar) {
+			current.leftLink = insert(current.leftLink, word, currIndex);
+		} else if (currentChar > current.currentChar) {
+			current.rightLink = insert(current.rightLink, word, currIndex);
+		} else if (currIndex == word.length() - 1) { // last char
+			current.wordEnds = true;
+		} else {
+			current.forwardLink = insert(current.forwardLink, word, currIndex + 1);
+		}
+		return current;
+	}
+
 
 	//Can be further optimized by using a trie data structure to represent the bank
 	public boolean contains(String geneSequence) {
-		for (String gc : bank) {
-			if (gc.equals(geneSequence)){
-				return true;
-			}
+		return find(root, geneSequence, 0);
+	}
+
+	private boolean find(TrieNode current, String word, int currIndex) {
+		char currentChar = word.charAt(currIndex);
+		if (current == null) {
+			return false;
 		}
-		return false;
+
+		if (currentChar < current.currentChar) {
+			return find(current.leftLink, word, currIndex);
+		} else if (currentChar > current.currentChar) {
+			return find(current.rightLink, word, currIndex);
+		} else if (currIndex == word.length() - 1) { // last char
+			return current.wordEnds;
+		} else {
+			return find(current.forwardLink, word, currIndex + 1);
+		}
 	}
 }
 public class GeneticMutations {
