@@ -60,16 +60,14 @@ class Graph{
 		}
 	}
 
-	public Graph reverseGraph() {
-		Graph reverseGraph = new Graph();
-		reverseGraph.adjList = reverseGraphAdjList;
-		reverseGraph.reverseGraphAdjList = adjList;
-		return reverseGraph;
-	}
 
 	public List<Integer> adj(int v) {
 		return adjList[v];
 
+	}
+
+	public List<Integer> adjReverse(int v) {
+		return reverseGraphAdjList[v];
 	}
 
 	public int size() {
@@ -110,9 +108,8 @@ public class GraphPath {
 			path.add(t);
 			return Arrays.asList(path);
 		}
-		Graph reverseGraph = graph.reverseGraph();
 		List<Path> allPaths = new ArrayList<>();
-		for (int incomingVertex : reverseGraph.adj(t)) {
+		for (int incomingVertex : graph.adjReverse(t)) {
 			List<Path> pathsToVertex = memo.containsKey(t) ? memo.get(t) : allPathsSourceTarget(graph, s, incomingVertex, memo);
 			for (Path path : pathsToVertex) {
 				path.add(t);
