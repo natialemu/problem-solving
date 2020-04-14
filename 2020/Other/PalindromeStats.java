@@ -69,11 +69,19 @@ public class PalindromeStats {
 				addToMemo(low, high, currentSolution, true, palindromes);
 				return currentSolution;
 			}
-			addToMemo(low, high, longestPalindromes, false, palindromes);
+			Set<String> longestPalindromes1 = palindromes.containsKey(low + 1) && palindromes.get(low + 1).containsKey(high) ?
+				palindromes.get(low+1).get(high).longestPalindromes : longestPalindromicSubsringV2(low + 1, high, palindromes);
+			Set<String> longestPalindromes2 = palindromes.containsKey(low) && palindromes.get(low).containsKey(high - 1) ?
+				palindromes.get(low).get(high - 1).longestPalindromes : longestPalindromicSubsringV2(low, high - 1, palindromes);
+
+			Set<String> currentSolution = union(longestPalindromes2, longestPalindromes1);
+			addToMemo(low, high, currentSolution, false, palindromes);
 			return longestPalindromes;
 		} else {
-			Set<String> longestPalindromes1 = longestPalindromicSubsringV2(low + 1, high, palindromes);
-			Set<String> longestPalindromes2 = longestPalindromicSubsringV2(low, high - 1, palindromes);
+			Set<String> longestPalindromes1 = palindromes.containsKey(low + 1) && palindromes.get(low + 1).containsKey(high) ?
+				palindromes.get(low+1).get(high).longestPalindromes : longestPalindromicSubsringV2(low + 1, high, palindromes);
+			Set<String> longestPalindromes2 = palindromes.containsKey(low) && palindromes.get(low).containsKey(high - 1) ?
+				palindromes.get(low).get(high - 1).longestPalindromes : longestPalindromicSubsringV2(low, high - 1, palindromes);
 
 			// check which of the two lists contain palindromes of larger size:
 			// find the union if they have palindromes of simillar length
