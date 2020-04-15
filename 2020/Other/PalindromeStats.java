@@ -18,6 +18,89 @@ class Solution {
  		longestPalindromes = new HashSet<>();
  	}
 }
+class TrieNode {
+	TrieNode leftLink;
+	TrieNode rightLink;
+	TrieNode forwardLink;
+	char character;
+	boolean wordEnds;
+}
+
+class SuffixTree {
+	TrieNode root;
+
+	public SuffixTree(String str) {
+		for (int i = str.length() - 1; i >=0; i--) {
+			String suffix = str.substring(i);
+			root = insert(root, suffix, 0);
+		}
+	}
+
+	private TrieNode insert(TrieNode current, String str, int currIndex) {
+		char currentChar = str.charAt(currIndex);
+		if (current == null) {
+			current = new TrieNode();
+			current.character = currentChar;
+		}
+
+		if (currentChar > current.character) {
+			current.rightLink = insert(current.rightLink, str, currIndex);
+		} else if (currentChar < current.character) {
+			current.leftLink = insert(current.leftLink, str, currIndex);
+		} else if (currIndex == str.length() - 1) {
+			current.wordEnds = true;
+		} else {
+			current.forwardLink = insert(current.forwardLink, str, currIndex + 1);
+		}
+		return current;
+	}
+
+	public int match(String str, int index) {
+		return match(root, str, index);
+	}
+
+	private int match(TrieNode current, String str, int currIndex) {
+		char currentChar = str.charAt(currIndex);
+		if (current == null) {
+			return currIndex; // no match found for this word
+		}
+
+		if (currentChar > current.character) {
+			return match(current.rightLink, str, currIndex);
+		} else if (currentChar < current.character) {
+			return match(current.leftLink, str, currIndex);
+		} else if (currIndex == str.length() - 1) {
+			return currIndex + 1; // matched everything
+		} else {
+			return match(current.forwardLink, str, currIndex + 1);
+		}
+
+	}
+	public int allMatches(String str, int index, Set<String> everyMatch) {
+		return allMatches(root, str, index, new StringBuilder(), everyMatch);
+	}
+	private int allMatches(TrieNode current, String str, int currIndex, StringBuilder builder, Set<String> everyMatch) {
+		char currentChar = str.charAt(currIndex);
+		if (current == null) {
+			return currIndex; // no match found for this word
+		}
+
+		if (currentChar > current.character) {
+			return allMatches(current.rightLink, str, currIndex, builder, everyMatch);
+		} else if (currentChar < current.character) {
+			return allMatches(current.leftLink, str, currIndex, builder, everyMatch);
+		} else if (currIndex == str.length() - 1) {
+			builder.append(currentChar);
+			everyMatch.add(builder.toString());
+			return currIndex + 1; // matched everything
+		} else {
+			builder.append(currentChar);
+			everyMatch.add(builder.toString());
+			return allMatches(current.forwardLink, str, currIndex + 1, builder, everyMatch);
+		}
+
+	}
+}
 public class PalindromeStats {
 	private String input;
 
@@ -26,7 +109,7 @@ public class PalindromeStats {
 	}
 	
 	public Set<String> longestPalindromicSubsrings() {
-		return longestPalindromicSubsringV1();
+		return longestPalindromicSubsringV3();
 		//return longestPalindromicSubsringV2(0, input.length() - 1, new HashMap<>());
 
 	}
@@ -87,7 +170,31 @@ public class PalindromeStats {
 	}
 
 	private Set<String> longestPalindromicSubsringV3() {
-		return null;
+		Set<String> allLongestPalindromes = new HashSet<>();
+		int maxLength = 0;
+		int startIndex = 0;
+		String reversedString = new StringBuilder(input).reverse().toString();
+		SuffixTree st = new SuffixTree(input);
+
+		while (startIndex < reversedString.length()) {
+			int endIndex = st.match(reversedString, startIndex);
+			if (startIndex == endIndex) { // nothing was matched
+				startIndex +=1;
+			} else {
+				String palindrome = reversedString.substring(startIndex, endIndex);
+
+				if (palindrome.length() > maxLength) {
+					allLongestPalindromes = new HashSet<>();
+					allLongestPalindromes.add(palindrome);
+					maxLength = palindrome.length();
+				} else if(palindrome.length() == maxLength){
+					allLongestPalindromes.add(palindrome);
+				}
+				startIndex = endIndex;
+
+			}
+		}
+		return allLongestPalindromes;
 
 	}
 	private Set<String> longestPalindromicSubsringV2(int low, int high, Map<Integer, Map<Integer, Solution>> palindromes) {
@@ -178,7 +285,7 @@ public class PalindromeStats {
 	}
 
 	public Set<String> palindromicSubsrings() {
-		return palindromicSubsringsV1();
+		return palindromicSubsringsV3();
 		// return palindromicSubsringsV2(0, input.length() - 1, new HashMap<>());
 	}
 
@@ -261,6 +368,23 @@ public class PalindromeStats {
 			
 		
 
+	}
+
+	public Set<String> palindromicSubsringsV3() {
+		Set<String> allPalindromes = new HashSet<>();
+		int startIndex = 0;
+		String reversedString = new StringBuilder(input).reverse().toString();
+		SuffixTree st = new SuffixTree(input);
+
+		while (startIndex < reversedString.length()) {
+			int endIndex = st.allMatches(reversedString, startIndex, allPalindromes);
+			if (startIndex == endIndex) { // nothing was matched
+				startIndex +=1;
+			} else {
+				startIndex = endIndex;
+			}
+		}
+		return allPalindromes;
 	}
 
 
