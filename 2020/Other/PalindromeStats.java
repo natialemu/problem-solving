@@ -26,14 +26,69 @@ public class PalindromeStats {
 	}
 	
 	public Set<String> longestPalindromicSubsrings() {
-		return longestPalindromicSubsringV2(0, input.length() - 1, new HashMap<>());
+		return longestPalindromicSubsringV1();
+		//return longestPalindromicSubsringV2(0, input.length() - 1, new HashMap<>());
 
 	}
 
-	private List<String> longestPalindromicSubsringV1() {
-		//**for each center, move out to find the palindrome
-		//
+	private Set<String> longestPalindromicSubsringV1() {
+
+		Set<String> longestPalindromes = new HashSet<>();
+		int palindromeSize = 0;
+
+		for (int i = 0; i < input.length(); i++) {
+
+
+			//look for odd sized palindromes with i as center
+			int low = i;
+			int high = i;
+			while (low >= 0 && high < input.length()) {
+				if (input.charAt(low) != input.charAt(high)) {
+					break;
+				}
+				if (high - low + 1 > palindromeSize) {
+					palindromeSize = high - low + 1;
+					longestPalindromes = new HashSet<>();
+					longestPalindromes.add(input.substring(low, high+1));
+				} else if (high - low + 1 == palindromeSize) {
+					longestPalindromes.add(input.substring(low, high + 1));
+				}
+
+				low--;
+				high++;
+			}
+
+			//look for odd sized palindromes with i as center
+			if (i + 1 < input.length()) {
+				low = i;
+				high = i + 1;
+				while (low >= 0 && high <= input.length() - 1) {
+					if (input.charAt(low) != input.charAt(high)) {
+						break;
+					}
+					if (high - low + 1 > palindromeSize) {
+						palindromeSize = high - low + 1;
+						longestPalindromes = new HashSet<>();
+						longestPalindromes.add(input.substring(low, high+1));
+					} else if (high - low + 1 == palindromeSize) {
+						longestPalindromes.add(input.substring(low, high + 1));
+					}
+
+					low--;
+					high++;
+				}
+
+			}
+			
+
+		}
+
+		return longestPalindromes;
+	}
+
+	private Set<String> longestPalindromicSubsringV3() {
 		return null;
+
 	}
 	private Set<String> longestPalindromicSubsringV2(int low, int high, Map<Integer, Map<Integer, Solution>> palindromes) {
 
@@ -123,7 +178,43 @@ public class PalindromeStats {
 	}
 
 	public Set<String> palindromicSubsrings() {
-		return palindromicSubsringsV2(0, input.length() - 1, new HashMap<>());
+		return palindromicSubsringsV1();
+		// return palindromicSubsringsV2(0, input.length() - 1, new HashMap<>());
+	}
+
+	private Set<String> palindromicSubsringsV1() {
+		Set<String> allPalindromes = new HashSet<>();
+		for (int i = 0; i < input.length(); i++) {
+			//look for odd sized palindromes with i as center
+			int low = i;
+			int high = i;
+			while (low >= 0 && high <= input.length() - 1) {
+				if (input.charAt(low) != input.charAt(high)) {
+					break;
+				}
+				allPalindromes.add(input.substring(low, high + 1));
+				low--;
+				high++;
+			}
+
+			if (i + 1 < input.length()) {
+				low = i;
+				high = i + 1;
+				while (low >= 0 && high <= input.length() - 1) {
+					if (input.charAt(low) != input.charAt(high)) {
+						break;
+					}
+					allPalindromes.add(input.substring(low, high+1));
+					low--;
+					high++;
+				}
+
+			}
+			
+
+		}
+
+		return allPalindromes;
 	}
 
 	private Set<String> palindromicSubsringsV2(int low, int high, Map<Integer, Map<Integer, Solution>> palindromes) {
