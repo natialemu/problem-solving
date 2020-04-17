@@ -2,9 +2,7 @@ import java.util.*;
 import java.io.*;
 
 /**
-
-Description: Based on a slightly modified version of https://leetcode.com/problems/time-based-key-value-store/ 
-
+	Description: Based on a slightly modified version of https://leetcode.com/problems/time-based-key-value-store/ 
 **/
 
 interface Values<V> {
@@ -100,9 +98,7 @@ interface KeyValueStore<K, V> {
 }
 
 class KeyValueStoreImpl<K, V> implements KeyValueStore<K, V>{
-
 	Map<K, Values<V>> keyValueMap;
-
 	public KeyValueStoreImpl() {
 		keyValueMap = new HashMap<>();
 	}
