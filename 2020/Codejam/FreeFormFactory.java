@@ -67,27 +67,29 @@ interface DisjointSet {
 
 
 class UnionFind implements DisjointSet {
-	int[] parentOf; // if parentRootedTree[i] == i, then i is a parent
+	int[] parentOf; // if parentOf[i] == i, then i is a parent
 	Map<Integer, Integer> parents; // maps each component to its size
-	Map<Integer, Boolean> completeBipartiteMap;
-	Map<Integer, Integer> componentToEdgeNumMap;
+	Map<Integer, Boolean> completeBipartiteMap; // is comonent i a complete bipartite component?
+	Map<Integer, Integer> componentToEdgeNumMap; // componentToEdgeNumMap.get(i) gets the number of edges in component 'i'
 
 	public UnionFind(int size) {
 		parentOf = new int[size];
-		parents = new ArrayList<>();
+		parents = new HashMap<>();
 		completeBipartiteMap = new HashMap<>();
 		componentToEdgeNumMap = new HashMap<>(); 
 		//initially there are no edges in the component since each vertex is in its own component.
-		for (int i = 0; i < parentsOf; i++) {
+		for (int i = 0; i < parentsOf.length; i++) {
+			parentsOf[i] = i;
 			componentToEdgeNumMap.put(i, 0);
+			parents.put(i, 1);
 		}
 	}
 
 	@Override
 	public int find(int i) {
 		while (parentOf[i] != i) {
-			parent[i] = parent[parent[i]]; // set i's parent to be its grand parent
-			i = parent[i];
+			parentOf[i] = parentOf[parentOf[i]]; // set i's parent to be its grand parent
+			i = parentOf[i];
 		}
 		return i;
 	} 
@@ -97,10 +99,12 @@ class UnionFind implements DisjointSet {
 		int parentOfI = find(i);
 		int parentOfJ = find(j);
 
-		if (parents.get(parentOfJ).size() > parents.get(parentOfI)) {
+		if (parents.get(parentOfJ) > parents.get(parentOfI)) {
 			parentOf[parentOfI] = parentOfJ;
+			parents.remove(parentOfI);
 		} else  {
 			parentOf[parentOfJ] = parentofI;
+			parents.remove(parentOfJ);
 		}
 	}
 
@@ -141,13 +145,24 @@ class UnionFind implements DisjointSet {
 	@Override
 	public DisjointSet clone() {
 		DisjointSet newDisJointSet = new DisjointSet(parentsOf.length);
-
 		for (int i = 0; i < parentsOf.length; i++) {
 			newDisJointSet.parentsOf[i] = parentsOf[i];
 		}
-		//clone and set the other fields too.
-		return newDisJointSet;
+		
+		//clone parents
+		for (int parent : parents.keySet()) {
+			newDisJointSet.parents.put(parent, parents.get(parent));
+		}
 
+		for (int parent : completeBipartiteMap.keySet()) {
+			newDisJointSet.completeBipartiteMap.put(parent, completeBipartiteMap.get(parent));
+		}componentToEdgeNumMap
+
+		for (int parent : componentToEdgeNumMap.keySet()) {
+			newDisJointSet.componentToEdgeNumMap.put(parent, componentToEdgeNumMap.get(parent));
+		}
+
+		return newDisJointSet;
 	}
 
 
@@ -168,11 +183,16 @@ class FreeFormFactory {
 
 	public static int minCostToTeachEmployees(Graph g) {
 		DisjointSet set = new UnionFind(g.V()); // number of initial disjoint components
-		for (Integer u : g.V()) {
+		for (Integer vertex : g.V()) {
 			boolean[] visited = new boolean[g.V()];
-			dfs(g, u, set, visited);
-			if (isCompleteBipartite(u, set)) set.setCompleteBipartite(u, true);
+
+			// all vertices that are reachable from 'vertex' are in the same component as vertex
+			dfs(g, vertex, set, visited);
+
+			if (isCompleteBipartite(vertex, set)) set.setCompleteBipartite(u, true);
 		}
+
+		// a list of the partent nodes from each component in the disjoint set. O(n) where n is the number of components.
 		List<Integer> parents = set.parents();
 		return minCostToTeachEmployees(g, parents, 0, parents.size() - 1, new HashMap<>());
 	}
@@ -211,7 +231,7 @@ class FreeFormFactory {
 		int maxEdgeNum = set.size(source1) + set.size(source2);
 		int newlyAddedEdges = (maxEdgeNum/2)*(maxEdgeNum/2) - set.numEdgesIn(source1) - set.numEdgesIn(source2);
 		set.merge(source1, source2);
-		set.setCompleteBipartite(source1);//
+		set.setCompleteBipartite(source1, true);
 		set.setNumEdgesIn(source1, maxEdgeNum);
 		return newlyAddedEdges;
 
