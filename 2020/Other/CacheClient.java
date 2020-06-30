@@ -1,3 +1,6 @@
+
+import java.util.concurrent.*;
+import java.util.*;
 /**
 What's left:
 		- Finish up  all unimplemented methods
@@ -14,7 +17,8 @@ What's left:
 interface CacheCluster<K, V> {
 	Void put(K key, V value); 
 	V get(K key);
-	V highestPriorityValue();
+	Void addCachesFromCluster(int num);
+	Void removeCachesFromCluster(int num);
 }
 
 /**
@@ -25,6 +29,7 @@ interface Cache<K, V> {
 	V get(K key);
 	List<K> keys();
 	Void delete(K key);
+	V highestPriorityValue();
 }
 
 class CachedObject<K, V> {
@@ -76,6 +81,11 @@ class LRUCache<K> implements Cache<K, CachedObject> {
 			head = newNode;
 		}
 		return null;
+	}
+
+	private CachedObject clone(CachedObject original) {
+		CachedObject cloned = new CachedObject(original.key, original.value, original.count);
+		return cloned;
 	}
 
 	private void evit() {
@@ -133,7 +143,7 @@ class CacheImpl<K, V> implements Cache<K, V> {
 	int currSize;
 	Map<Key, Integer> keyToIndexMap;
 	LRUCache<K> lruCache;
-
+	final Object lock = new Object();
 
 	public CacheImpl(int maxSize) {
 		minHeap = new CacheObject[maxSize];
@@ -142,7 +152,7 @@ class CacheImpl<K, V> implements Cache<K, V> {
 
 	}
 	@Override
-	public Void put(K key, V value) {
+	public synchronized Void put(K key, V value) {
 		if (currSize == minHeap.length) evict();
 		CacheObject cachedObject = wrap(key, value);
 		minHeap[currSize] = cachedObject;
@@ -162,9 +172,12 @@ class CacheImpl<K, V> implements Cache<K, V> {
 		currSize--;
 		int indexToRemove = 0;
 		if (lfuObject.count == lruObject.count) {
-			K lruKey  lruObject.key;
+			K lruKey = lruObject.key;
 			indexToRemove = keyToIndexMap.get(K);
-		} 
+		} else {
+			K lfuKey = lfuObject.key;
+			lruCache.delete(lfuKey);
+		}
 		
 		swap(indexToRemove, minHeap.length - 1);
 		minHeap[currSize] = null;
@@ -196,13 +209,22 @@ class CacheImpl<K, V> implements Cache<K, V> {
 	}
 
 	@Override
-	public V get(K key) {
-		int objectIndex = keyToIndexMap.getOrDefault(key, -1);
-		if (objectIndex == -1) return null;
-		minHeap[objectIndex].count +=1;
-		bubbleDownIfNecessary(objectIndex);
-		CachedObject value = lruCache.get(key);
-		value.count += 1;
+	public V get(K key) throws InterruptedException{
+		try {
+			synchronized (lock) {
+				// no need to wait on a condition
+				int objectIndex = keyToIndexMap.getOrDefault(key, -1);
+				if (objectIndex == -1) return null;
+				minHeap[objectIndex].count +=1;
+				bubbleDownIfNecessary(objectIndex);
+				CachedObject value = lruCache.get(key);
+				value.count += 1;
+			}
+		} catch (InterruptedException e) {
+			throw e;
+		}
+		
+
 	}
 
 	@Override
@@ -211,15 +233,25 @@ class CacheImpl<K, V> implements Cache<K, V> {
 	}
 
 	@Override
-	public Void delete(K key) {
-		validate(key);
-		Integer objectIndex = keyToIndexMap.get(key);
-		swap(objectIndex, currSize - 1);
-		bubbleDownIfNecessary(objectIndex);
-		keyToIndexMap.remove(objectIndex);
-		currSize -= 1;
-		minHeap[currSize] = null;
-		lruCache.delete(key);
+	public Void delete(K key) throws InterruptedException {
+
+		try {
+			Lock lock = new ReentrantLock();
+			Condition conditionVariable = lock.newCondition();
+
+			lock.lock();
+			validate(key);
+			Integer objectIndex = keyToIndexMap.get(key);
+			swap(objectIndex, currSize - 1);
+			bubbleDownIfNecessary(objectIndex);
+			keyToIndexMap.remove(objectIndex);
+			currSize -= 1;
+			minHeap[currSize] = null;
+			lruCache.delete(key);
+			lock.unlock();
+		} catch (InterruptedException e) {
+			throw e;
+		}
 	}
 
 	@Override
@@ -233,9 +265,11 @@ class CacheImpl<K, V> implements Cache<K, V> {
 class CacheClusterImpl<K, V> implements CacheCluster<K, V> {
 	Map<Integer, Cache> caches;
 	int[] consistentHashingDimension; // 128 bit space 
+	Semaphore semaphore;
 
 
 	public CacheCluster(int clusterSize, int cacheSize) {
+		semaphore = new Semaphore(clusterSize);
 		validate(clusterSize, cacheSize); // cluster size must be less than threshold.
 		caches = new HashMap<>();
 		initialize(clusterSize, cacheSize); // initialize the right number of caches with the right capacity
@@ -254,24 +288,56 @@ class CacheClusterImpl<K, V> implements CacheCluster<K, V> {
 	}
 
 	@Override
-	public Void put(K key, V value) {
-		int cacheKey = selectCache(key);
-		Cache cache = caches.get(cacheKey);
-		cache.put(key, value);
+	public Void put(K key, V value) throws InterruptedException{
+		try {
+			semaphore.acquire();
+			int cacheKey = selectCache(key);
+			Cache cache = caches.get(cacheKey);
+			cache.put(key, value);
+		} catch (InterruptedException e) {
+			throw e;
+		} finally {
+			semaphore.release();
+		}
+		return null;
 	}
+		
 
 	@Override
-	public V get(K key) {
-		int cacheKey =  (key);
-		Cache cache = caches.get(cacheKey);
-		return cache.get(key);
+	public V get(K key) throws InterruptedException {
+		try {
+			semaphore.acquire();
+			int cacheKey =  (key);
+			Cache cache = caches.get(cacheKey);
+			return cache.get(key);
+		} catch (InterruptedException e) {
+			throw e
+		} finally {
+			semaphore.release();
+		}
+		return null;
+		
 	}
 	private int selectCache(K key) {
+		// is this thread safe?
 		int keyHash = k.hashCode() % consistentHashingDimension.length;
 		while (!caches.containsKey(keyHash)) {
 			keyHash = (keyHash + 1) % consistentHashingDimension.length;
 		}
 		return keyHash
+	}
+
+
+	@Override
+	public Void addCachesFromCluster(int num) {
+		//TODO
+
+	}
+
+	@Override
+	public Void removeCachesFromCluster(int num) {
+		//TODO
+
 	}
 
 }
@@ -280,6 +346,38 @@ public class CacheClient {
 
 	public static void main(String[] args) {
 		//TODO
+		ExecutorService threadPool = Executors.newFixedThreadPool(5);
+		ExecutorCompletionService ecs = new ExecutorCompletionService(threadPool);
+
+		// Submit 10 trivial tasks.
+		CacheCluster<Integer, String> cluster = new CacheCluster<>(5, 10);
+
+
+		// create a runnable task that, given the cache cluster, and a key, value
+		// it will request to add the key,value pair to the cluster.
+
+
+		//create a callable task that, given a cluster and a key, it will retrieve it
+
+
+		// submit multiple instances of the task that adds keys
+
+
+		// submit multiple instances of the task taht retrieves keys.
+
+
+		// log what's going on in each cache. when somethign is added. when something is evicted...
+
+		List<Integer> keys = generateKeys(8);
+        for (int i = 0; i < 10; i++) {
+            ecs.submit(
+            	new Callable<>(){
+            		@Override
+            		public 
+            	}, 
+            	new Integer(i));
+        }
+
 	}
 	
 }
