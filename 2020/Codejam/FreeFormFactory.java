@@ -57,7 +57,6 @@ interface DisjointSet {
 	int find(int i); // given a vertex, find which component it belongs to(returns the root of the component)
 	void merge(int i, int j); // given two vertices, if they're in different components, merge the two components. 
 	boolean completeBipartiteComponent(int i); // the component that i is in is a complete bipartite graph
-	void setCompleteBipartite(int i, boolean val); // set the component that i is in to be complete bipartite
 	List<Integer> parents(); // returns root of each component. the data structure will need to keep track of that
 	int size(int i);// return the size of component that 'i' is in
 	int numEdgesIn(int i); //number of edges in component i
@@ -102,21 +101,32 @@ class UnionFind implements DisjointSet {
 		if (parents.get(parentOfJ) > parents.get(parentOfI)) {
 			parentOf[parentOfI] = parentOfJ;
 			parents.remove(parentOfI);
+
+			//update the number of edges in the new component
+			componentToEdgeNumMap.put(parentOfJ, componentToEdgeNumMap.get(parentofI) + componentToEdgeNumMap.get(parentOfJ) + 1);
+			componentToEdgeNumMap.remove(parentOfI);
+
+			// update the completeness of the component if necessary
+			completeBipartiteMap.remove(parentofI);
+			completeBipartiteMap.put(parentOfJ, isComplete(parents.get(parentOfJ), componentToEdgeNumMap.get(parentOfJ)));
 		} else  {
 			parentOf[parentOfJ] = parentofI;
 			parents.remove(parentOfJ);
+
+
+			//update the number of edges in the new component
+			componentToEdgeNumMap.put(parentOfI, componentToEdgeNumMap.get(parentofI) + componentToEdgeNumMap.get(parentOfJ) + 1);
+			componentToEdgeNumMap.remove(parentOfJ);
+
+			//update the completeness of the component if necessary
+			completeBipartiteMap.remove(parentofJ);
+			completeBipartiteMap.put(parentOfI, isComplete(parents.get(parentOfI), componentToEdgeNumMap.get(parentOfI)));
 		}
 	}
 
 	@Override
 	public boolean completeBipartiteComponent(int i) {
 		return completeBipartiteMap.containsKey(i) && completeBipartiteMap.get(i);
-	}
-
-	@Override
-	public void setCompleteBipartite(int i, boolean value) {
-		if (!completeBipartiteMap.containsKey(find(i))) throw new IllegalArgumentException("P");
-		completeBipartiteMap.put(i, value);
 	}
 
 	@Override
@@ -131,15 +141,21 @@ class UnionFind implements DisjointSet {
 	}
 
 	@Override
-	public int numEdgesIn(int i, int n) {
+	public int numEdgesIn(int i) {
 		if (!componentToEdgeNumMap.containsKey(find(i))) throw new IllegalArgumentException("vertex not found in any component");
 		return componentToEdgeNumMap.get(find(i));
 	}
 
 	@Override
-	public void setNumEdgesIn(int i, int n) {
+	public void addEdgesTo(int i, int n) {
 		if (!componentToEdgeNumMap.containsKey(find(i))) throw new IllegalArgumentException("vertex not found in any component");
 		componentToEdgeNumMap.put(find(i), n);
+		completeBipartiteMap.put(find(i), isComplete(parents.get(find(i)), componentToEdgeNumMap.get(find(i))));
+	}
+
+	private static boolean isComplete(int size, int numEdges) {
+		int maxNumEdges = (size/2)*(size/2); // the number of edges the component should have if it's a complete bipartite component.
+		return maxNumEdges == numEdges;
 	}
 
 	@Override
@@ -185,11 +201,8 @@ class FreeFormFactory {
 		DisjointSet set = new UnionFind(g.V()); // number of initial disjoint components
 		for (Integer vertex : g.V()) {
 			boolean[] visited = new boolean[g.V()];
-
 			// all vertices that are reachable from 'vertex' are in the same component as vertex
 			dfs(g, vertex, set, visited);
-
-			if (isCompleteBipartite(vertex, set)) set.setCompleteBipartite(u, true);
 		}
 
 		// a list of the partent nodes from each component in the disjoint set. O(n) where n is the number of components.
@@ -200,11 +213,7 @@ class FreeFormFactory {
 	// a complete is a complete bipartite component iff, the number of edges between the vertices in the component
 	// if equal to the max number of edges there can be in a bipartite graph of component's size. This is only true, if 
 	// the graph is a bipartite graph which means edges exist between vertices of different colors only and there is no odd lengthed cycle.
-	private static boolean isCompleteBipartite(int v, DisjointSet set) {
-		int numElementsInComponentV = set.size(v);
-		int maxNumEdges = (numElementsInComponentV/2)*(numElementsInComponentV/2); // the number of edges the component should have if it's a complete bipartite component.
-		return maxNumEdges == set.numEdgesIn(v);
-	}
+
 
 	private static int minCostToTeachEmployees(Graph g, List<Integer> parents, DisjointSet set, int i, int j, Map<Integer, Map<Integer, Integer>> memo) {
 		if ( i >= j ) return 0;
@@ -225,16 +234,12 @@ class FreeFormFactory {
 	}
 
 	private static int merge(Graph g, int source1, int source2, DisjointSet set) {
-		//TODO'/
-		// number of edges: num components in source1 * num in source 2
-		// num edges in 
-		int maxEdgeNum = set.size(source1) + set.size(source2);
-		int newlyAddedEdges = (maxEdgeNum/2)*(maxEdgeNum/2) - set.numEdgesIn(source1) - set.numEdgesIn(source2);
+		// TODO: Re-think the logic for the number of edges to add to make a component complete
 		set.merge(source1, source2);
-		set.setCompleteBipartite(source1, true);
-		set.setNumEdgesIn(source1, maxEdgeNum);
+		int maxEdgeNum = set.size(source1);
+		int newlyAddedEdges = (maxEdgeNum/2)*(maxEdgeNum/2) - set.numEdgesIn(source1);
+		set.addEdgesTo(source1, newlyAddedEdges);
 		return newlyAddedEdges;
-
 	}
 
 	/**
@@ -248,8 +253,6 @@ class FreeFormFactory {
 				set.merge(curr, w);
 				dfs(g, w, set, visited);
 			}
-			set.setNumEdgesIn(curr, set.numEdgesIn(curr) + 1); // the number of edges in the component
-
 		}
 	}
 
