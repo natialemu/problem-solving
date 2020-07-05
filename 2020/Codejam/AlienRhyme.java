@@ -21,6 +21,7 @@ class TrieNode {
 			if (current.children[0] != null) bfs.add(current.children[0]);
 			if (current.children[2] != null) bfs.add(current.children[2]);
 		}
+		fv = fv % 2; // pair as much as possible
 	}
 }
 
@@ -29,7 +30,7 @@ class Trie {
 
 	public Trie(String[] words) {
 		for (String word : words) 
-			root = buildTrie(root, word, 0);
+			root = buildTrie(root, new StringBuilder(word).reverse().toString(), 0);
 	}
 	private TrieNode buildTrie(TrieNode current, String word, int currIndex) {
 		char currentChar = word.charAt(currIndex);
@@ -48,7 +49,17 @@ class Trie {
 	}
 
 	public int minUnpairedWords() {
-		return root.fv;
+		int totalUnpaired = 0;
+		Queue<TrieNode> bfs = new LinkedList<>();
+		if (root != null)
+			bfs.add(root);
+		while (!bfs.isEmpty()) {
+			TrieNode current = bfs.poll();
+			totalUnpaired += current.fv;
+			if (current.children[0] != null) bfs.add(current.children[0]);
+			if (current.children[2] != null) bfs.add(current.children[2]);
+		}
+		return totalUnpaired;
 	}
 }
 public class AlienRhyme {
@@ -65,7 +76,7 @@ public class AlienRhyme {
 	private static int maxWordPairings(String words, int low, int high, Map<Integer, Map<Integer, Integer>> memo) {
 		if (high == low) return 0;
 
-		if (high - low == 1) sharePrefix(words[high], words[low]) ? 1 : 0;
+		if (high - low == 1) shareSuffix(words[high], words[low]) ? 1 : 0;
 
 		int soln1 = memo.containsKey(low) && memo.get(low).containsKey(high - 1) 
 		? memo.get(low).get(high - 1) : maxWordPairings(words, low, high - 1, memo);
@@ -73,7 +84,7 @@ public class AlienRhyme {
 		? memo.get(low + 1).get(high) : maxWordPairings(words, low + 1, high, memo);
 
 		Map<Integer, Integer> highToSolnMap = new HashMap<>();
-		if (sharePrefix(words[high], words[low])) {
+		if (shareSuffix(words[high], words[low])) {
 
 			int soln3 = memo.containsKey(low + 1) && memo.get(low + 1).containsKey(high - 1) 
 			? 1 + memo.get(low + 1).geT(high - 1) : 1 + maxWordPairings(word, low + 1, high - 1, memo);
@@ -91,8 +102,8 @@ public class AlienRhyme {
 
 	}
 
-	private static boolean sharePrefix(String word1, String word2) {
-		return word1.charAt(0) == word2.charAt(0);
+	private static boolean shareSuffix(String word1, String word2) {
+		return word1.charAt(word1.length() - 1) == word2.charAt(word2.length() - 1);
 
 	}
 
