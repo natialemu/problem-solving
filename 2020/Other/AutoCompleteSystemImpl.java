@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.concurrent.*;
 
 
 /**
@@ -77,16 +78,18 @@ public class AutoCompleteSystemImpl implements AutoCompleteSystem {
 	}
 
 	TrieNode root; // Represents the root of the trie
-	TrieNode current; // will point to the current node in the trie as clients are typing 
-	StringBuilder typedSoFar; // keep track of the string typed so far by the client
+	TrieNode current; 
+	Map<Integer, TrieNode> clientToNodeMap; //will point to the current node in the trie as clients are typing
+	Map<Integer, StringBuilder> typedSoFarByClient; // keeps track of sentences typed so far by clients
+	final Object lock = new Object();
 
 	public AutoCompleteSystemImpl(String[] sentences, int[] times) {
-		typedSoFar = new StringBuilder();
+		clientToNodeMap = new HashMap<>();
+		typedSoFarByClient = new HashMap<>();
 		if (sentences.length != times.length) throw new IllegalArgumentException("Input input. Array sizes of sentences and times don't match.");
 
 		//insert each sentence along with its count
 		for (int i = 0; i < sentences.length; i++) root = insert(root, sentences[i], times[i], 0); 
-		current = root;
 	}
 
     // Insert 'sentence' into the trie and increase its count by 'count'
@@ -115,21 +118,35 @@ public class AutoCompleteSystemImpl implements AutoCompleteSystem {
 
 
 	@Override
-	public List<String> input(char c) {
-		if (c == '#')  {
-			// if client is done typing, either update the count of the typed sentence by 1 or 
-			// insert the sentence if it is a new one with 1
-			root = insert(root, typedSoFar.toString(), 1, 0);
-			current = root; // reset the pointer that tracks the client
-			typedSoFar = new StringBuilder(); // reset the string
-			return new ArrayList<>();
-		}
-		typedSoFar.append(c); 
-		List<String> allMatches = find(current, c);
+	public List<String> input(int clientId, char c) {
 
-		// moves the current node forwrad in anticipation of the next character the client will type
-		current = current.forwardLink;
-		return allMatches;
+		try {
+			synchronized (lock) {
+				if (c == '#')  {
+					// if client is done typing, either update the count of the typed sentence by 1 or 
+					// insert the sentence if it is a new one with 1
+					root = insert(root, typedSoFar.toString(), 1, 0);
+					TrieNode node = root;
+					clientToNodeMap.put(clientId, node);
+					typedSoFarByClient.put(clientId, new StringBuilder()) // reset the string for the client
+					return new ArrayList<>();
+				}
+				StringBuilder typedSoFar = typedSoFarByClient.getOrDefault(clientId, new StringBuilder());
+				TrieNode defaultNode = root;
+				TrieNode current = clientToNodeMap.getOrDefault(clientId, defaultNode);
+				typedSoFar.append(c); 
+				List<String> allMatches = find(current, c);
+
+				// moves the current node forwrad in anticipation of the next character the client will type
+				current = current.forwardLink;
+				return allMatches;
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+
 	}
 
 	// finds the node out of all siblings of 'node' that has a character of  'c' and returns the
@@ -149,14 +166,36 @@ public class AutoCompleteSystemImpl implements AutoCompleteSystem {
 
 	public static void main(String[] args) {
 		AutoCompleteSystem autocomplete = new AutoCompleteSystemImpl(new String[] {"i love you", "island", "ironman", "i love leetcode"}, new int[] {5, 3, 2,2});
-		List<String> suggestions = autocomplete.input('i');
-		print("Suggestions after typing 'i': ", suggestions);
-		suggestions = autocomplete.input(' ');
-		print("Suggestions after typing 'i ': ", suggestions);
-		suggestions = autocomplete.input('a');
-		print("Suggestions after typing 'i a': ", suggestions);
-		suggestions = autocomplete.input('#');
-		print("Suggestions after typing '#': ", suggestions);
+
+		class SuggestionRetrieverRunnable implements Runnable {
+			private int clientId;
+			private AutoCompleteSystem acs;
+			public SuggestionRetrieverRunnable(int clientId, AutoCompleteSystem acs) {
+				this.clientId = clientId;
+				this.acs = acs;
+			}
+
+			@Override
+			public void run() {
+				List<String> suggestions = autocomplete.input('i');
+				print("Client " + clientId +  "Suggestions after typing 'i': ", suggestions);
+				suggestions = autocomplete.input(' ');
+				print("Client " + clientId + "Suggestions after typing 'i ': ", suggestions);
+				suggestions = autocomplete.input('a');
+				print("Client " + clientId + "Suggestions after typing 'i a': ", suggestions);
+				suggestions = autocomplete.input('#');
+				print("Client " + clientId + "Suggestions after typing '#': ", suggestions);
+
+			}
+		}
+
+		ExecutorService threadPool = Executors.newFixedThreadPool(4);
+
+		for (int clientId = 0; clientId < 4; clientId++) {
+			threadPool.submit(new SuggestionRetrieverrunnable(clientId, autocomplete));
+		}
+
+		threadPool.shutdown();
 	}
 	private static void print(String msg, List<String> suggestions) {
 		System.out.println(msg);
