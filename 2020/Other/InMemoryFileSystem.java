@@ -35,28 +35,63 @@ interface FileSystem {
 
 public class InMemoryFileSystem implements FileSystem {
 
-	private Directory root;
+	/*
+	File system should allow multiple threads to access it.
 
+	**/
+	private Directory root;
+	private final Semaphore semaphore;
 	/**
 	A helper class that represents each individual directory in the file system
 	**/
 	class Directory {
+
+
+		/**
+		Operations on a directory should generally be atomic particularly if theere is a side effect.
+		Create a lock
+		create a condition
+
+		when writing:
+		- take a hold of the lock.
+		- update the condition
+
+
+		when reading:
+		-> repeatedly check the condition. if condition indicates locked. attempt to acquire the lock and wait til the reader is done.
+
+		**/
 
 		String directoryName;
 		Map<String, String> fileToContentMap; // file name mapped to it's content
 		Directory leftLink; // a link to all sibling directories whose names are less than this directory name. 
 		Directory rightLink; // a link to all sibling directories whose names are less than this directory name.
 		Directory forwardLink; // a root link to to all sub directories of this directory.
+		final Object lock = new Object();
+		boolean lockOccupiedByWriter = false;
 
-		public Directory(String directoryName) {
+
+		public Directory(String directoryName, int numThreads) {
 			this.directoryName = directoryName;
 			fileToContentMap = new HashMap<>();
+			semaphore = new Semaphore(numThreads);
 		}
 
 
 		// appends content to a file in this directory, if it's present
 		public void addFile(String name, String content) {
-			fileToContentMap.put(name, fileToContentMap.getOrDefault(name, "") +  content);
+			try {
+				synchronized(lock) {
+					lockOccupiedByWriter = true;
+					fileToContentMap.put(name, fileToContentMap.getOrDefault(name, "") +  content);
+					lockOccupiedByWriter = false;
+					lock.signalAll();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+			
 		}
 		//returns a list of all the directories under this directory
 		public Set<String> directories() {
@@ -74,14 +109,35 @@ public class InMemoryFileSystem implements FileSystem {
 		}
 
 		public String fileConent(String file) {
-			return fileToContentMap.getOrDefault(file, null);
+			//don't attempt to acquire the lock if it's not locked by a writer thread.
+			try {
+				while (lockOccupied) {
+					synchronized (lock) {
+						while (lockOccupied) {lock.wait();}
+					}
+				}
+				return fileToContentMap.getOrDefault(file, null);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 
 		public List<String> contents() {
-			 List<String> directoryContents = new ArrayList<>();
-			 directoryContents.addAll(directories());
-			 directoryContents.addAll(fileToContentMap.keySet());
-			 return directoryContents;
+			//don't attempt to acquire the lock if it's not locked by a writer thread.
+			try {
+				while (lockOccupied) {
+					synchronized (lock) {
+						while (lockOccupied) {lock.wait();}
+					}
+				}
+			    List<String> directoryContents = new ArrayList<>();
+			    directoryContents.addAll(directories());
+			    directoryContents.addAll(fileToContentMap.keySet());
+			    return directoryContents;
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
 		}
 	}
 
@@ -90,9 +146,18 @@ public class InMemoryFileSystem implements FileSystem {
 	public List<String> ls(String path) {
 		validate(path);
 		String[] paths = path.split("/");
-		Directory targetDirectory = paths.length == 0  ? root : getDrctry(root, paths, 1, paths.length - 1);
-		List<String> pathContent = targetDirectory == null ? new ArrayList<>() : targetDirectory.contents();
-		return pathContent;
+		try {
+			semaphore.acquire();
+			Directory targetDirectory = paths.length == 0  ? root : getDrctry(root, paths, 1, paths.length - 1);
+			List<String> pathContent = targetDirectory == null ? new ArrayList<>() : targetDirectory.contents();
+			return pathContent;
+		} catch ( Exception e) {
+			e.printStackTrace();
+		} finally {
+			semaphore.release();
+		}
+		return null;
+		
 	}
 
 	private Directory getDrctry(Directory current, String[] paths, int currentIndex, int target) {
@@ -110,7 +175,14 @@ public class InMemoryFileSystem implements FileSystem {
 	public void mkdir(String path) {
 		validate(path);
 		String[] paths = path.split("/");
-		root = mkdir(root, paths, 1, paths.length - 1);
+		try {
+			semaphore.acquire();
+			root = mkdir(root, paths, 1, paths.length - 1);
+		} catch (Exception e) {
+			e.printStackTrace();		
+		} finally {
+			semaphore.release();
+		}
 	}
 
 	private Directory mkdir(Directory current, String[] paths, int currentIndex, int target) {
@@ -132,17 +204,34 @@ public class InMemoryFileSystem implements FileSystem {
 		validate(path);
 		if (fileContent == null) throw new IllegalArgumentException("Invalid file content.");
 		String[] paths = path.split("/");
-		root = mkdir(root, paths, 1, paths.length - 2); // make directory in case parts don't exist
-		Directory targetDirectory = getDrctry(root, paths, 1, paths.length - 2);
-		targetDirectory.addFile(paths[paths.length - 1], fileContent);
+		try {
+			semaphore.acquire();
+			root = mkdir(root, paths, 1, paths.length - 2); // make directory in case parts don't exist
+			Directory targetDirectory = getDrctry(root, paths, 1, paths.length - 2);
+			targetDirectory.addFile(paths[paths.length - 1], fileContent);
+		} catch (Exception e) {
+			e.printStackTrace();		
+		} finally {
+			semaphore.release();
+		}
+		
 	}
 	
 	@Override
 	public String readContentFromFile(String path) {
 		validate(path);
 		String[] paths = path.split("/");
-		Directory targetDirectory = getDrctry(root, paths, 1, paths.length - 2);
-		return targetDirectory.fileConent(paths[paths.length - 1]);
+		try {
+			semaphore.acquire();
+			Directory targetDirectory = getDrctry(root, paths, 1, paths.length - 2);
+			return targetDirectory.fileConent(paths[paths.length - 1]);
+		} catch (Exception e) {
+			e.printStackTrace();		
+		} finally {
+			semaphore.release();
+		}
+		return null;
+		
 	}
 
 	private void validate(String path) {
