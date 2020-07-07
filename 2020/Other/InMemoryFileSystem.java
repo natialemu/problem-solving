@@ -34,11 +34,6 @@ interface FileSystem {
 }
 
 public class InMemoryFileSystem implements FileSystem {
-
-	/*
-	File system should allow multiple threads to access it.
-
-	**/
 	private Directory root;
 	private final Semaphore semaphore;
 	/**
@@ -46,29 +41,12 @@ public class InMemoryFileSystem implements FileSystem {
 	**/
 	class Directory {
 
-
-		/**
-		Operations on a directory should generally be atomic particularly if theere is a side effect.
-		Create a lock
-		create a condition
-
-		when writing:
-		- take a hold of the lock.
-		- update the condition
-
-
-		when reading:
-		-> repeatedly check the condition. if condition indicates locked. attempt to acquire the lock and wait til the reader is done.
-
-		**/
-
 		String directoryName;
 		Map<String, String> fileToContentMap; // file name mapped to it's content
 		Directory leftLink; // a link to all sibling directories whose names are less than this directory name. 
 		Directory rightLink; // a link to all sibling directories whose names are less than this directory name.
 		Directory forwardLink; // a root link to to all sub directories of this directory.
 		final Object lock = new Object();
-		boolean lockOccupiedByWriter = false;
 
 
 		public Directory(String directoryName, int numThreads) {
@@ -82,9 +60,7 @@ public class InMemoryFileSystem implements FileSystem {
 		public void addFile(String name, String content) {
 			try {
 				synchronized(lock) {
-					lockOccupiedByWriter = true;
 					fileToContentMap.put(name, fileToContentMap.getOrDefault(name, "") +  content);
-					lockOccupiedByWriter = false;
 					lock.signalAll();
 				}
 			} catch (Exception e) {
@@ -111,12 +87,12 @@ public class InMemoryFileSystem implements FileSystem {
 		public String fileConent(String file) {
 			//don't attempt to acquire the lock if it's not locked by a writer thread.
 			try {
-				while (lockOccupied) {
-					synchronized (lock) {
-						while (lockOccupied) {lock.wait();}
-					}
+			
+				synchronized (lock) {
+					return fileToContentMap.getOrDefault(file, null);
 				}
-				return fileToContentMap.getOrDefault(file, null);
+				
+				
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -125,15 +101,12 @@ public class InMemoryFileSystem implements FileSystem {
 		public List<String> contents() {
 			//don't attempt to acquire the lock if it's not locked by a writer thread.
 			try {
-				while (lockOccupied) {
-					synchronized (lock) {
-						while (lockOccupied) {lock.wait();}
-					}
+				synchronized (lock) {
+					List<String> directoryContents = new ArrayList<>();
+			   	 	directoryContents.addAll(directories());
+			    	directoryContents.addAll(fileToContentMap.keySet());
+			    	return directoryContents;
 				}
-			    List<String> directoryContents = new ArrayList<>();
-			    directoryContents.addAll(directories());
-			    directoryContents.addAll(fileToContentMap.keySet());
-			    return directoryContents;
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
