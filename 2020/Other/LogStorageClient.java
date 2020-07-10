@@ -1,4 +1,5 @@
-
+import java.util.*;
+import java.util.concurrent.*;
 
 
 class Log {
@@ -23,75 +24,9 @@ interface LogStorage {
 
 
 	/**
-	Data structure design 1:
-		Map<Granulary, Logs>
-
-		Logs will be implemented as a BST.
-
-
-		privateFindAll(BSTNode curr, int timestamp1, int timestamp2 List<Log> desiredLogs) {
-			
-			if (curr node is not in range || current node is null)
-				return
-
-			recurse to the left if available
-			add log to desiredLogs
-			recurse to the right if available
-
-
-
-		}
-
-	Data structure design 2:
-		Using a trie to implement the log storage
-
-		TrieNode {
-			Log l;
-			The three links;
-			Granularity info;
-		}
-		//inserting a log is pretty straight forward.
-
-		retrieval of all nodes within a certain time range per granularity:
-
-		findAll(timestamp1, timestamp2, Granularity end);
-
-		// finding a subset of nodes within a well ordered linked structure:
-			-> BSTs
-			-> Trie
-			-> DAG
-
-		
-		//When this particular subroutine is called, desiredLogs will be populated with all logs having a timestamp within range of
-		//timestamp1 and timestamp2 
-		private findAll(TrieNode current, int[] timestamp1, int[] timestamp2, Granularity end, int i, List<Log> desiredLogs) {
-			//Initialize the queue with current in it. this is to go through all its siblings.
-			// if root is not in range, find first sibling that is.
-			while the queu is not empty {
-				poll from queue
-				add the appropriate sibling in range
-				
-				// if at end granularity, add the log from current node to list of desired logs
-				//recurse for the polled sibling if not yet at end granularity
-				findAll(current.forwardLink, timeStamp1, timestamp2, end, i + 1, desiredLogs);
-	
-			}
-		}
-
-
-		two behaviors for this are:
-
-		void put(Log log, long timestamp);
-
-		List<Log> get(long timestamp1, long timestamp2, Granularity granularity);
-
-
-
-		Key learnings here:
-		-> Finding a subset of nodes within a well ordered linked structure such as BST, Trie
-		-> Similarities in representing a String in a trie vs Representing a Log with varying timestamps per granuarity in a Trie.
-
-
+		Key learnings:
+		-> Finding a range of nodes within a well ordered linked structure such as BST, Trie, Heap, etc.
+		-> Similarities between representing a String in a trie and that of representing a Log with varying timestamps per granuarity in a Trie.
 	**/
 }
 class TimeStampSpliter {
@@ -136,7 +71,7 @@ class LogStorageTrie implements LogStorage {
 				Granularity.HOUR,
 				Granularity.MINUTE,
 				Granularity.SECOND
-			}
+			};
 
 	public LogStorageTrie() {
 		splitter = new TimeStampSplitter();
@@ -198,19 +133,103 @@ class LogStorageTrie implements LogStorage {
 			} else {
 				findAll(current.family[1], timeStampMapStart, timeStampMapEnd, granularities, curr + 1, desiredLogs);
 			}
-			
 		}
 
 	}
-
-
 }
 
 class LogStorageBst implements LogStorage { 
 	TimeStampSplitter splitter;
+	Map<Granularity, Logs> logsPerGranularity;
+	private static final Granularity[] granularities = 
+			new Granularity[] {
+				Granularity.YEAR,
+				Granularity.MONTH,
+				Granularity.DAY,
+				Granularity.HOUR,
+				Granularity.MINUTE,
+				Granularity.SECOND
+			};
+	class Logs {
+		class BstNode {
+			Log log;
+			long timeStamp;
+			BstNode left, right;
+			public BstNode(int logId, long timeStamp) {
+				log = new Log(logId);
+				this.timeStamp = timeStamp;
+			}
+			public void increment() {log.count += 1;}
+		}
+		BstNode root;
+
+		public void add(int logId, long timestamp) {
+			BstNode runner = root;
+			while (runner.left != null || runner.right != null) {
+				if (runner.timestamp > timestamp) runner = runner.left;
+				else if (runner.timestamp <= timestamp) runner = runner.right;
+			}
+			if (timestamp < runner.timestamp) runner.left = new BstNode(logId, timestamp);
+			else runner.right = new BstNode(logId, timestamp);
+ 		}
+
+ 		public List<Integer> findAll(long timeStampStart, long timeStampEnd) {
+
+ 			//TODO
+ 			List<Integer> allNodes = new ArrayList<>();
+ 			findAll(root, timeStampStart, timeStampEnd, allNodes);
+ 		}
+ 		private void findAll(BstNode current, long timeStampStart, long timeStampEnd, List<Integer> desiredLogs) {
+ 			if (current != null) {
+
+ 				if (current.timeStamp >= timeStampStart && current.timeStamp <= timeStampEnd) {
+ 					desiredLogs.add(current.log.id);
+ 				}
+ 				if (current.left != null && current.timeStamp >= timeStampStart) findAll(current.left, timeStampStart, timeStampEnd, desiredLogs);
+ 				if (current.right != null && current.timeStamp <= timeStampEnd) findAll(current.right, timeStampStart, timeStampEnd, desiredLogs);
+ 			}
+
+ 		}
+
+	}
+
+	@Override
+	public void put(int logId, long timeStamp) {
+		Map<Granularity, Long> timeStampPerGranularity = 
+		splitter.splitByGranularityV2(timeStamp);
+		for (Granularity granularity : granularities) {
+			long timestamp = timeStampPerGranularity.get(granularity);
+			Logs logs = logsPerGranularity.get(granularity);
+			logs.add(logId, timestamp);
+		}
+	}
+
+	@Override
+	public List<Integer> get(long timeStampStart, long timeStampEnd, Granulary granularity)  {
+		Map<Granularity, Long> timeStampPerGranularityStart = 
+		splitter.splitByGranularityV2(timeStampStart);
+			Map<Granularity, Long> timeStampPerGranularityEnd = 
+		splitter.splitByGranularityV2(timeStampEnd);
+
+		long timestamp = timeStampPerGranularity.get(granularity);
+		Logs logs = logsPerGranularity.get(granularity);
+		List<Integer> desiredLogs = logs.findAll(timeStampPerGranularityStart.get(granularity), timeStampPerGranularityEnd.get(granularity));
+		return desiredLogs;
+	}
 
 }
 
 public class LogStorageClient {
+	public static void main(String[] args) {
+
+		//Log storage implemented via a Trie
+		LogStorage logStorageTrie = new LogStorageTrie();
+
+
+
+		//Log storage system implemented via a Map and BST
+		LogStorage logStorageBst = new LogStorageBst();
+
+	}
 	
 }
