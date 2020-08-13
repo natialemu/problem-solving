@@ -10,7 +10,7 @@ Bull's eye
 public class BlindFoldedBullseye {
 
 	// this is the size of the board 
-	public static final long BOARD_SIZE = 2000000000; 
+	public static final long BOARD_SIZE = 20000000; 
 	public static long circleRadius = -1L;
 	public static long xcenter = -1L;
 	public static long ycenter = -1L;
@@ -39,12 +39,14 @@ public class BlindFoldedBullseye {
 		while (high > low) {
 			long mid = (high + 2) / 2;
 			if (horizontal) { // movement is horizontal
+				throwAt(mid, other);
 				if (isInRange(mid, other)) {
 					high = mid;
 				} else {
 					low = mid;
 				}
 			} else {
+				throwAt(other, mid);
 				if (isInRange(other, mid)) {
 					high = mid;
 				} else {
@@ -56,17 +58,21 @@ public class BlindFoldedBullseye {
 	}
 
 	private static long[] findDartRange(long[][] wall, long radius) {
-		long initialX = 0;
-		long initialY = 0;
+		long initialX = radius - 1;
+		long initialY = radius;
 
 		for (int x = initialX; x < wall.length; x += (radius - 1) ) {
 			for (int y = initialY; y < wall.length; y += radius) {
+				throwAt(x, y);
 				if (isInRange(x, y)) return new long[] {x, y};
 			}
 		}
 
 		return new long[] {-1, -1};
 
+	}
+	private static void throwAt(long x, long y) {
+		System.out.println("Dart thrown at: ["+x+","+y+"]");
 	}
 
 	
@@ -77,17 +83,16 @@ public class BlindFoldedBullseye {
 
 	public static void main(String[] args) {
 		Scanner in = new Scanner(new BufferedReader(new InputStreamReader(System.in)));
-        String[] s = in.nextLine().split(" ");
-        xcenter = Long.parseLong(s[0]);
-        ycenter = Long.parseLong(s[1]);
-
         int t = in.nextInt(); 
         in.nextLine();
         for (int i = 1; i <= t; ++i) {
-          circleRadius = in.nextLong();
-          in.nextLine();
-          int numThrows = numThrowsToCenter(circleRadius);
-          System.out.println("Case #" + i + ": " + (numThrows));
+        	String[] s = in.nextLine().split(" ");
+        	xcenter = Long.parseLong(s[0]);
+        	ycenter = Long.parseLong(s[1]);
+            circleRadius = in.nextLong();
+            in.nextLine();
+            int numThrows = numThrowsToCenter(circleRadius);
+            System.out.println("Case #" + i + ": " + (numThrows));
         }
 	}
 }
