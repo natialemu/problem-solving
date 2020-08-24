@@ -5,12 +5,18 @@ public class BFFV2 {
 	 public static int maxCircleSize(int[] graph) {
 
 	 	/**
-	 	Problem to fix: 
-	 	the reversed graph will not be a list with a cyle. it's a full fledged grpah
+	 	Reverse the graph. the reversed graph is not going to be a linked list
 	 	**/
 	 	List<Integer>[] reversedGraph = reverse(graph);
+
+	 	// a list of all the cycles in the graph.
 	 	List<List<Integer>> cycles = getCycles(reversedGraph);
 	 	int maxKidsInCircle = 0;
+
+	 	/**
+	 	for each cycle, if the length is two, find the longest path from each vertex that's part of the cycle
+	 	Otherwise, just take the number of kids that make up the cycle.
+	 	**/
 	 	for (List<Integer> cycle : cycles) {
 	 		if (cycle.size() == 2) {
 	 			int a = cycle.get(0);
@@ -32,7 +38,8 @@ public class BFFV2 {
 	 		adjGraph[i] = new ArrayList<>();
 	 	}
 	 	for (int kid = 0; kid < graph.length; kid++) {
-	 		//graph[kid] -> kid
+	 		//original graph: kid - > graph[kid]
+	 		//reversed graph: graph[kid] -> kid
 	 		adjGraph[graph[kid]].add(kid);
 	 	}
 	 	return adjGraph;
@@ -40,13 +47,17 @@ public class BFFV2 {
 
 	 private static List<List<Integer>> getCycles(List<Integer>[] graph) {
 	 	List<List<Integer>> allCycles = new ArrayList<>();
+
+	 	//keep track of visisted vertices thoughout all DFSes
 	 	Set<Integer> visisted = new HashSet<>();
 
 	 	for (int v = 0; v < graph.length; v++) {
 	 		if (!visisted.contains(v)) {
+	 			//keep track of visisted vertices per dfs
 	 			Set<Integer> cycleDetector = new HashSet<>();
 	 			List<Integer> cycle = new ArrayList<>();
-	 			cycles(v, graph, visisted, cycleDetector, cycle);
+	 			Stack<Integer> path = new Stack<>();
+	 			cycles(v, graph, visisted, cycleDetector, cycle, path);
 	 			if (cycle.size() != 0) {
 	 				allCycles.add(cycle);
 	 			}
@@ -56,24 +67,30 @@ public class BFFV2 {
 
 	 }
 
-	 private static boolean cycles(int curr, List<Integer>[] graph, Set<Integer> visisted, Set<Integer> cycleDetector, List<Integer> cycle) {
-	 	if (visisted.contains(curr)) return false;
+	 /**
+	 if a visisted node is en thought dfs:
+	 **/
+	 private static void cycles(int curr, List<Integer>[] graph, Set<Integer> visisted, Set<Integer> cycleDetector, List<Integer> cycle, Stack<Integer> path) {
+	 	path.push(curr);
+	 	if (visisted.contains(curr)) return;
 	 	if (cycleDetector.contains(curr)) {
-	 		cycle.add(curr);
-	 		return true;
+	 		populateCycleList(cycle, curr, path);
 	 	}
 	 	cycleDetector.add(curr);
 	 	visisted.add(curr);
 
 	 	for (Integer adj : graph[curr]) {
-	 		if (cycles(adj, graph, visisted, cycleDetector, cycle)) {
-	 			cycle.add(curr);
-	 			return true;
-	 		}
+	 		cycles(adj, graph, visisted, cycleDetector, cycle, path);
 	 	}
-	 	return false;
+	 	path.pop();
 	 }
 
+	 private static void populateCycleList(List<Integer> cycleList, int v, Stack<Integer> path) {
+	 	cycleList.add(path.pop());
+	 	while (!path.isEmpty() && path.peek() != v) {
+	 		cycleList.add(path.pop());
+	 	}
+	 }
 
 	 private static int longestPathFrom(int v, List<Integer>[] graph) {
 	 	if (graph[v].size() == 0) {
