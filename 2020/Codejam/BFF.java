@@ -8,8 +8,6 @@ public class BFF {
 	the cycles
 	
 	**/
-
-
 	public static int maxCircleSize(int[] kidsToBffMap) {
 
 		//PROBLEM:
@@ -29,7 +27,9 @@ public class BFF {
 
 		//get all kids who aren't anyone's best friend
 		List<Integer> sources = findSources(kidsToBffMap);
-
+		if (sources.size() == 0) {
+			return kidsToBffMap.length;
+		}
 		for (int kid = 0; kid < sources.size(); kid++) {
 			if (!visited.contains(kid)) {
 
@@ -68,21 +68,20 @@ public class BFF {
 	}
 	private static int cycleLength(int[] graph, int curr, Set<Integer> visited, Map<Integer, Map<Integer, Integer>> vertexToCycleDistance) {
 		//the structure of the graph is a linked list with cycles. 
-		int slowPtr= curr;
+		int slowPntr= curr;
 		int lengthToCycle = 0;
-		Set<Integer> cycleDetector = new HashMap<>();
+		Set<Integer> cycleDetector = new HashSet<>();
 		boolean visitedNodeFound = false;
-		while (!visited(slowPntr) && slowPntr < graph.length) {
+		while (!visited.contains(slowPntr) && slowPntr < graph.length) {
 			
 			if (!visited.contains(slowPntr)) {
 				visited.add(slowPntr);
 			} else {
 				//this means slowPntr is not in a component of length 2 but has been visisted which means the number of cycles in this component has been visisted already
-				visistedNodeFound = true; // component has already been explored
+				visitedNodeFound = true; // component has already been explored
 			}
 
 			slowPntr = graph[slowPntr];
-			fastPtr = graph[graph[fastPtr]];
 
 			if (cycleDetector.contains(slowPntr)) { // cycle found
 				int cycLength =  cycleLength(graph, slowPntr, visited);
@@ -93,7 +92,7 @@ public class BFF {
 					vertexToCycleDistance.put(curr, newInfo);
 					return cycLength;
 				} else {
-					visistedNodeFound ? -1 : cycleLength;
+					return visitedNodeFound ? -1 : cycLength;
 
 				}
 				
@@ -101,17 +100,19 @@ public class BFF {
 			cycleDetector.add(slowPntr);
 			lengthToCycle++;
 		}
+		return lengthToCycle;
+
 
 	}
 
 	private static List<Integer> findSources(int[] graph) {
-		List<Integer> soures = new ArrayList<>();
+		List<Integer> sources = new ArrayList<>();
 		boolean[] mark = new boolean[graph.length];
 		for (int i = 0; i < graph.length; i++) {
 			if (mark[i]) continue;
 			int bff = graph[i];
-			while (bff >= 0 && bff < graph && !mark[bff]) {
-				mark[bff];
+			while (bff >= 0 && bff < graph.length && !mark[bff]) {
+				mark[bff] = true;
 				bff = graph[bff];
 			}
 		}
@@ -124,7 +125,7 @@ public class BFF {
 
 	public static int[] getCycles(int[] graph, int slow) {
 		//TOOD: need to make sure 0th is first and 1st is second
-		int[] cyclces = new int[2];
+		int[] cycles = new int[2];
 		cycles[0] = slow;
 		cycles[1] = graph[slow];
 		return cycles;
@@ -134,7 +135,7 @@ public class BFF {
 
 		int length = 0;
 		int fast = slow;
-		while (!visited(slowPntr) &&  fast < graph.length) {
+		while (!visited.contains(slow) &&  fast < graph.length) {
 			fast = graph[fast];
 			length += 1;
 			if (fast == slow) { 
@@ -158,7 +159,7 @@ public class BFF {
         		bffs[j] = Integer.parseInt(bffsString[j]);
         	}
             int maxKidsInCircle = maxCircleSize(bffs);
-            System.out.println("Case #" + i + ": " + (numThrows));
+            System.out.println("Case #" + i + ": " + (maxKidsInCircle));
         }
 
 	}
