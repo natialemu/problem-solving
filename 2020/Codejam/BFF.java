@@ -3,36 +3,33 @@ import java.io.*;
 
 public class BFF {
 
-	class Cycle {
-		int x, y, length;
-
-		@Override
-		public boolean equals(Object o) {
-			Cycle other = (Cycle) o;
-			return Objects.equals(x, other.x) && Objects.equals(y, other.y);
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(x, y);
-		}
-
-
-	}
 
 	public static int maxCircleSize(int[] kidsToBffMap) {
+
+		//PROBLEM:
+		//Goal is to find the sum of the longest path to EACH vertex of a cycle
+
+		//this is to map kids to cycles of length of > 2
 		Map<Integer, Integer> cycleSizeToKidsMap = new HashMap<>();
-		Map<Integer, Cycle> vertexToCycleDistance = new HashMap<>();
+
+		// this maps each vertex to the cycle info in its component such as the vertices in the cycle and length to from the
+		//vertex to its cycle
+		Map<Integer, Map<Integer, Integer>> vertexToCycleDistance = new HashMap<>();
 		//an additional map 
 
 
-		// stores the length from verex i to cycle of length 2
-		// at end of day, solution here will be the sum of all visited nodes
-		Map<Integer, Integer> vertexToCyclePathLength = new HashMap<>(); 
+	
 		Set<Integer> visited = new HashSet<>();
+
+		//get all kids who aren't anyone's best friend
 		List<Integer> sources = findSources(kidsToBffMap);
+
 		for (int kid = 0; kid < sources.size(); kid++) {
 			if (!visited.contains(kid)) {
+
+				//get the cycle length
+				// if cycle length is 2:
+				//	- vertexToCycleDistance has been updated appropriately
 				int cycleLengthInComponent = cycleLength(kidsToBffMap, kid, visited, vertexToCycleDistance);
 				if (cycleLengthInComponent > 2) {
 					cycleSizeToKidsMap.put(cycleLengthInComponent, cycleLengthInComponent);
@@ -41,20 +38,65 @@ public class BFF {
 		}
 
 		int maxNumberOfKids = 0;
+
+		//add up all kids in cycles of length > 2
 		for (Integer i : cycleSizeToKidsMap.keySet()) {
 			maxNumberOfKids += cycleSizeToKidsMap.get(i);
 		}
-		Map<Cycle, Integer> cycleToLengthMap = new HashMap<>();
+		//from one of the vertices of v of a cycle
+		Map<Integer, Integer> cycleToLengthMap = new HashMap<>();
 
 		for (Integer v : vertexToCycleDistance.keySet()) {
-			Cycle c = vertexToCycleDistance.get(v);
-			cycleToLengthMap.put(c, Math.max(c.length, cycleToLengthMap.getOrDefault(c, -1)));
+			Map<Integer, Integer> c = vertexToCycleDistance.get(v);
+			for (Integer cycleVertex : c.keySet()) {
+				cycleToLengthMap.put(cycleVertex, Math.max(c.get(cycleVertex), cycleToLengthMap.getOrDefault(cycleVertex, -1)));
+			}
+			
 		}
 
-		for (Cycle c : cycleToLengthMap.keySet()) {
-			maxNumberOfKids += cycleToLengthMap.get(c);
+		for (Integer cycleVertex : cycleToLengthMap.keySet()) {
+			maxNumberOfKids += cycleToLengthMap.get(cycleVertex) + 1;
 		}
 		return maxNumberOfKids;
+
+	}
+	private static int cycleLength(int[] graph, int curr, Set<Integer> visited, Map<Integer, Map<Integer, Integer>> vertexToCycleDistance) {
+		//the structure of the graph is a linked list with cycles. 
+		int slowPtr= curr;
+		int fastPtr = graph[graph[curr]];
+		int lengthToCycle = 0;
+		while (!visited(slowPntr) && slowPntr < graph.length && graph[curr] < graph.length) {
+
+			// if true, this means slowPntr vertex is in a component of cycle 2 and the length from slowPntr to the cycle is known.
+			if (vertexToCycleDistance.containsKey(slowPntr)) {
+				Map<Integer, Integer> cycleInfo = vertexToCycleDistance.get(slowPntr);
+				Map<Integer, IntegeR> cloneInfo = new HashMap<>(cycleInfo);
+				vertexToCycleDistance.put(curr, cloneInfo);
+				return 2; 
+			}
+			
+			if (!visited.contains(slowPntr)) {
+				visited.add(slowPntr);
+			} else {
+				//this means slowPntr is not in a component of length 2 but has been visisted which means the number of cycles in this component has been visisted already
+				return -1; // component has already been explored
+			}
+
+			slowPntr = graph[slowPntr];
+			fastPtr = graph[graph[fastPtr]];
+
+			if (slowPntr == fastPtr) {
+				int cycLength =  cycleLength(graph, slowPntr, fastPtr, visited);
+				if (cycLength == 2) {
+					int[] cycles = getCycles(graph, slowPntr, fastPtr);
+					Map<Integer, Integer> newInfo = new HashMap<>();
+					newInfo.put(slowPntr, lengthToCycle); // is this really right? Maybe use a different method of cycle detection.
+					vertexToCycleDistance.put(curr, newInfo);
+				}
+				return cycLength;
+			}
+			lengthToCycle;
+		}
 
 	}
 
@@ -75,40 +117,14 @@ public class BFF {
 		}
 		return sources;
 	}
-	private static int cycleLength(int[] graph, int curr, Set<Integer> visited, Map<Integer, Cycle> vertexToCycleDistance) {
-		int slowPtr= curr;
-		int fastPtr = graph[graph[curr]];
-		int lengthToCycle = 0;
-		while (!visited(slowPntr) && slowPntr < graph.length && graph[curr] < graph.length) {
 
-			if (vertexToCycleDistance.containsKey(slowPntr)) {
-				Cycle cycleInfo = vertexToCycleDistance.get(slowPntr);
-				Cycle newInfo = new Cycle(cycleInfo.x, cycleInfo.y, cycleInfo.length + lengthToCycle);
-				vertexToCycleDistance.put(curr, newInfo);
-				return 2; 
-			}
-			
-			if (!visited.contains(slowPntr)) {
-				visited.add(slowPntr);
-			}
-
-			slowPntr = graph[slowPntr];
-			fastPtr = graph[graph[fastPtr]];
-
-			if (slowPntr == fastPtr) {
-				int cycLength =  cycleLength(graph, slowPntr, fastPtr, visited);
-				Cycle newInfo = new Cycle(cycleInfo.x, cycleInfo.y, cycleInfo.length + lengthToCycle);
-				vertexToCycleDistance.put(curr, newInfo);
-				if (cycLength == 2) {
-					Cycle newInfo = new Cycle(cycleInfo.x, cycleInfo.y, lengthToCycle);
-					vertexToCycleDistance.put(curr, newInfo);
-				}
-				return cycLength;
-			}
-			lengthToCycle;
-		}
-
-	}
+	public static int[] getCycles(int[] graph, int slow, int fast) {
+		//TOOD: need to make sure 0th is first and 1st is second
+		int[] cyclces = new int[2];
+		cycles[0] = slow;
+		cycles[1] = graph[slow];
+		return cycles;
+	} 
 
 	private static int cycleLength(int[] graph, int slow, int fast, Set<Integer> visited) {
 
