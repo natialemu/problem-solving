@@ -3,6 +3,12 @@ import java.io.*;
 
 public class BFF {
 
+	/***
+	Algoritmm 2: The reversed graph is much simpler, preserves the cycle. can just traverse from 
+	the cycles
+	
+	**/
+
 
 	public static int maxCircleSize(int[] kidsToBffMap) {
 
@@ -63,39 +69,37 @@ public class BFF {
 	private static int cycleLength(int[] graph, int curr, Set<Integer> visited, Map<Integer, Map<Integer, Integer>> vertexToCycleDistance) {
 		//the structure of the graph is a linked list with cycles. 
 		int slowPtr= curr;
-		int fastPtr = graph[graph[curr]];
 		int lengthToCycle = 0;
-		while (!visited(slowPntr) && slowPntr < graph.length && graph[curr] < graph.length) {
-
-			// if true, this means slowPntr vertex is in a component of cycle 2 and the length from slowPntr to the cycle is known.
-			if (vertexToCycleDistance.containsKey(slowPntr)) {
-				Map<Integer, Integer> cycleInfo = vertexToCycleDistance.get(slowPntr);
-				Map<Integer, IntegeR> cloneInfo = new HashMap<>(cycleInfo);
-				vertexToCycleDistance.put(curr, cloneInfo);
-				return 2; 
-			}
+		Set<Integer> cycleDetector = new HashMap<>();
+		boolean visitedNodeFound = false;
+		while (!visited(slowPntr) && slowPntr < graph.length) {
 			
 			if (!visited.contains(slowPntr)) {
 				visited.add(slowPntr);
 			} else {
 				//this means slowPntr is not in a component of length 2 but has been visisted which means the number of cycles in this component has been visisted already
-				return -1; // component has already been explored
+				visistedNodeFound = true; // component has already been explored
 			}
 
 			slowPntr = graph[slowPntr];
 			fastPtr = graph[graph[fastPtr]];
 
-			if (slowPntr == fastPtr) {
-				int cycLength =  cycleLength(graph, slowPntr, fastPtr, visited);
+			if (cycleDetector.contains(slowPntr)) { // cycle found
+				int cycLength =  cycleLength(graph, slowPntr, visited);
 				if (cycLength == 2) {
-					int[] cycles = getCycles(graph, slowPntr, fastPtr);
+					int[] cycles = getCycles(graph, slowPntr);
 					Map<Integer, Integer> newInfo = new HashMap<>();
 					newInfo.put(slowPntr, lengthToCycle); // is this really right? Maybe use a different method of cycle detection.
 					vertexToCycleDistance.put(curr, newInfo);
+					return cycLength;
+				} else {
+					visistedNodeFound ? -1 : cycleLength;
+
 				}
-				return cycLength;
+				
 			}
-			lengthToCycle;
+			cycleDetector.add(slowPntr);
+			lengthToCycle++;
 		}
 
 	}
@@ -118,7 +122,7 @@ public class BFF {
 		return sources;
 	}
 
-	public static int[] getCycles(int[] graph, int slow, int fast) {
+	public static int[] getCycles(int[] graph, int slow) {
 		//TOOD: need to make sure 0th is first and 1st is second
 		int[] cyclces = new int[2];
 		cycles[0] = slow;
@@ -126,10 +130,11 @@ public class BFF {
 		return cycles;
 	} 
 
-	private static int cycleLength(int[] graph, int slow, int fast, Set<Integer> visited) {
+	private static int cycleLength(int[] graph, int slow, Set<Integer> visited) {
 
 		int length = 0;
-		while (!visited(slowPntr) && slowPntr < graph.length && graph[curr] < graph.length) {
+		int fast = slow;
+		while (!visited(slowPntr) &&  fast < graph.length) {
 			fast = graph[fast];
 			length += 1;
 			if (fast == slow) { 
