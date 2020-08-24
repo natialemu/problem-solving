@@ -7,10 +7,11 @@ public class BFFV2 {
 	 	/**
 	 	Reverse the graph. the reversed graph is not going to be a linked list
 	 	**/
-	 	List<Integer>[] reversedGraph = reverse(graph);
+	 	ArrayList<Integer>[] reversedGraph = reverse(graph);
 
 	 	// a list of all the cycles in the graph.
 	 	List<List<Integer>> cycles = getCycles(reversedGraph);
+	 	System.out.println("Num cycles: "  + cycles.size());
 	 	int maxKidsInCircle = 0;
 
 	 	/**
@@ -18,6 +19,7 @@ public class BFFV2 {
 	 	Otherwise, just take the number of kids that make up the cycle.
 	 	**/
 	 	for (List<Integer> cycle : cycles) {
+	 		System.out.println();
 	 		if (cycle.size() == 2) {
 	 			int a = cycle.get(0);
 	 			int b = cycle.get(1);
@@ -31,8 +33,8 @@ public class BFFV2 {
 	 	return maxKidsInCircle;
 	 }
 
-	 private static List<Integer>[] reverse(int[] graph) {
-	 	List<Integer>[] adjGraph = (ArrayList<Integer>[]) new List[graph.length];
+	 private static ArrayList<Integer>[] reverse(int[] graph) {
+	 	ArrayList<Integer>[] adjGraph = (ArrayList<Integer>[]) new ArrayList[graph.length];
 	 	//initialize
 	 	for (int i = 0; i < adjGraph.length; i++) {
 	 		adjGraph[i] = new ArrayList<>();
@@ -45,7 +47,7 @@ public class BFFV2 {
 	 	return adjGraph;
 	 }
 
-	 private static List<List<Integer>> getCycles(List<Integer>[] graph) {
+	 private static List<List<Integer>> getCycles(ArrayList<Integer>[] graph) {
 	 	List<List<Integer>> allCycles = new ArrayList<>();
 
 	 	//keep track of visisted vertices thoughout all DFSes
@@ -70,19 +72,19 @@ public class BFFV2 {
 	 /**
 	 if a visisted node is en thought dfs:
 	 **/
-	 private static void cycles(int curr, List<Integer>[] graph, Set<Integer> visisted, Set<Integer> cycleDetector, List<Integer> cycle, Stack<Integer> path) {
+	 private static void cycles(int curr, ArrayList<Integer>[] graph, Set<Integer> visisted, Set<Integer> cycleDetector, List<Integer> cycle, Stack<Integer> path) {
 	 	path.push(curr);
-	 	if (visisted.contains(curr)) return;
+	 	
 	 	if (cycleDetector.contains(curr)) {
 	 		populateCycleList(cycle, curr, path);
 	 	}
+	 	if (visisted.contains(curr)) return;
 	 	cycleDetector.add(curr);
 	 	visisted.add(curr);
 
 	 	for (Integer adj : graph[curr]) {
 	 		cycles(adj, graph, visisted, cycleDetector, cycle, path);
 	 	}
-	 	path.pop();
 	 }
 
 	 private static void populateCycleList(List<Integer> cycleList, int v, Stack<Integer> path) {
@@ -92,7 +94,7 @@ public class BFFV2 {
 	 	}
 	 }
 
-	 private static int longestPathFrom(int v, List<Integer>[] graph) {
+	 private static int longestPathFrom(int v, ArrayList<Integer>[] graph) {
 	 	if (graph[v].size() == 0) {
 	 		return 1;
 	 	}
