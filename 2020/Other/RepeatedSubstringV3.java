@@ -2,8 +2,13 @@
 import java.util.*;
 import java.io.*;
 /**
+
 Algorithm 3:
-	- build an augmented suffix trie(as a ternary trie) with repeitition info in each node. then query the whole trie to count.
+	- suffix trie(as a ternary trie) with repeitition info in each node. then query the whole trie to count the number of repeated substrings. any prefix in a suffix trie is a substring 
+	 of the string represented by the suffix trie.
+
+
+
 
 **/
 
@@ -60,6 +65,8 @@ public class RepeatedSubstringV3 {
 				if (current.repetition > 1) numRepeated += 1;
 				if (current.left != null) siblingIterator.add(current.left);
 				if (current.right != null) siblingIterator.add(current.right);
+
+				//for each sibling, if the node has a child, traverse deep to explore the child sub trie
 				if (current.forward != null) numRepeated += traverse(current.forward);
 			}
 			return numRepeated;

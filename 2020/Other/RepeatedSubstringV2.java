@@ -4,9 +4,39 @@ Link to problem: https://open.kattis.com/problems/substrings
 
 Algorithm 2: 
  for each window of size 1 to N -1:
- 	use karp rabin to see repetition
+ 	use karp rabin to find repeated substrings of fixed window size.
 
 **/
+
+public class RepeatedSubstringV1 {
+
+	class RollingHash {
+		int base;
+		int hash;
+		final int prime = 7;
+
+		public RollingHash(int alphabetSize) {
+			base = alphabetSize;
+		}
+
+
+		public void append(char c) {
+			int ord = (int) c;
+			// change 12 to 123 -> multiply the hash by length of the hash + ord
+			int hashLength = Integer.toString(hash).length();
+			hash = hash*(Math.pow(base, hashLength)) + ord;
+		}
+		public void removeFirst(char c) {
+			// change 123 to 23 = 123 - 100 -> subtract  length of the hash + ord
+			hash = hash - Math.pow(base, hashLength);
+
+		}
+
+		public int hash() {
+			return hash % prime;
+		}
+}
+
 
 public class RepeatedSubstringV2 {
 	public static int allRepeatedSubstrings(String input) {

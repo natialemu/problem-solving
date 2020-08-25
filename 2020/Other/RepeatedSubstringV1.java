@@ -5,26 +5,17 @@ import java.util.*;
 
 Link to problem: https://open.kattis.com/problems/substrings
 Goal is to find the number of repeated substring in a string.
-- There can be at most N - 1 length repeated substring.
 
-if a substring of length l is repeated then each of the substrings of the repeated substring are also repeated.
-
-
-Question: can we reduce this to the longest repeated substring?
+if a substring of length m is repeated, then each smaller sized substring of substring m is also repeated.
 
 
-Algorithm 1:
+Question: is it possible to  reduce this to the longest repeated substring?
 
-find the longest repeated substring. compute the number of repeated substrings as a result of that. then take that substring and all its repetitions out. continue
-as long as there is a repeated substring.
-	Implementation details:
-	   using a Trie data structure:
-	   	1. removal of a substring: takes max O(L) time where L is the length of the substring
-	   	2. Finding the longest repeated substring: O(N) where N is the length of the trie
-	   	3
 
-Pseudocode:
-->
+Proposed algorithm:
+
+find the longest repeated substring. compute the number of repeated substrings as a result of longest repeated substring. Then, take the longest repeated substring its repeated occurences out. 
+Repeat this process as long as longest repeated substring subroutine returns some valid value.
 
 
 **/
@@ -59,6 +50,8 @@ public class RepeatedSubstringV1 {
 
 	public static int allRepeatedSubstrings(String input) {
 		String inputString = new String(input);
+
+		//get a list of all substrings of input whose length is the largest.
 		List<String> longestSubstring = getLongestSubstring(inputString);
 		int numRepeated = 0;
 
@@ -66,8 +59,13 @@ public class RepeatedSubstringV1 {
 		Somethin to test: what about overlapping repetitions?
 		**/
 		while (longestSubstring.size() != 0) {
-			inputString = inputString.replaceAll(longestSubstring, ""); // may not be the actual syntax
 			for (String substring : longestSubstring) {
+				//remove all occurences of 'substring' from inputstring
+				inputString = inputString.replaceAll(substring, "");
+
+				//calculate the number of repeated substrings as a result of 'substring'. 
+				// if substring is of length 'n'. then the number of repeated substrings is
+				// n + (n-1) + (n-2) + (n-3)... which converges to '(n^2 + n)/2'
 				numRepeated += (substring.length()*substring.length() - substring.length())/2;
 			}
 			longestSubstring = getLongestSubstring(inputString);
@@ -75,6 +73,9 @@ public class RepeatedSubstringV1 {
 		return numRepeated;
 	}
 
+	/**
+	Use binary search to find the right window size. then use karb rabin to search for repeated substrings of a specific window.
+	**/
 	public static List<String> getLongestSubstring(String input) {
 		int low = 1;
 		int high = input.length() - 1;
