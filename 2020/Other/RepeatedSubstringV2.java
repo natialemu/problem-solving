@@ -1,5 +1,7 @@
 
 /**
+Link to problem: https://open.kattis.com/problems/substrings
+
 Algorithm 2: 
  for each window of size 1 to N -1:
  	use karp rabin to see repetition
@@ -12,13 +14,36 @@ public class RepeatedSubstringV2 {
 
 		int numRepeated = 0;
 		for (int window = 1; window < N; window++) {
-			numRepeated += reatedSubstringsOfSize(input, window);
+			numRepeated += repeatedSubstringsOfSize(input, window);
+			
 		}
 		return numRepeated;
 		
 	}
 
-	private static int reatedSubstringsOfSize(String s, int windowLength) {
+	private static int repeatedSubstringsOfSize(String s, int windowLength) {
+		Map<Integer, Integer> hashToCountMap = new HashMap<>();
+		Map<Integer, String> hashToSubstringMap = new HashMap<>();
+		int numRepeated = 0;
+		RollingHash rollingHash = new RollingHash(26);
+
+		int start = 0;
+		for(int i = 0; i < s.length(); i++) {
+			rollingHash.append(s.charAt(s));
+			if (i >= window) {
+				rollingHash.removeFirst(start);
+				hashToCountMap.put(rollingHash.hash(), hashToCountMap.getOrDefault(rollingHash.hash(), 0) + 1);
+				//vertification may be needed
+				hashToSubstringMap.put(rollingHash.hash(), s.substring(start, i + 1));
+				start++;
+			}
+		}
+
+		for (int hash : hashToCountMap.keySet()) {
+			if (hashToCountMap.get(hash) > 1) numRepeated += 1;
+			
+		}
+		return numRepeated;
 
 	}
 

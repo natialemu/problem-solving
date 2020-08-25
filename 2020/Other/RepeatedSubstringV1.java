@@ -1,5 +1,6 @@
 
-
+import java.io.*;
+import java.util.*;
 /**
 
 Link to problem: https://open.kattis.com/problems/substrings
@@ -26,30 +27,96 @@ Pseudocode:
 ->
 
 
-
-
-
 **/
 public class RepeatedSubstringV1 {
-	private static final String EMPTY = "";
+
+	class RollingHash {
+		int base;
+		int hash;
+		final int prime = 7;
+
+		public RollingHash(int alphabetSize) {
+			base = alphabetSize;
+		}
+
+
+		public void append(char c) {
+			int ord = (int) c;
+			// change 12 to 123 -> multiply the hash by length of the hash + ord
+			int hashLength = Integer.toString(hash).length();
+			hash = hash*(Math.pow(base, hashLength)) + ord;
+		}
+		public void removeFirst(char c) {
+			// change 123 to 23 = 123 - 100 -> subtract  length of the hash + ord
+			hash = hash - Math.pow(base, hashLength);
+
+		}
+
+		public int hash() {
+			return hash % prime;
+		}
+	}
+
 	public static int allRepeatedSubstrings(String input) {
 		String inputString = new String(input);
-		String longestSubstring = getLongestSubstring(inputString);
+		List<String> longestSubstring = getLongestSubstring(inputString);
 		int numRepeated = 0;
 
 		/**
 		Somethin to test: what about overlapping repetitions?
 		**/
-		while (!longestSubstring.equals(EMPTY)) {
-			inputString = inputString.remove(longestSubstring); // may not be the actual syntax
-			numRepeated += (longestSubstring.length()*longestSubstring.length() - longestSubstring.length())/2;
+		while (longestSubstring.size() != 0) {
+			inputString = inputString.replaceAll(longestSubstring, ""); // may not be the actual syntax
+			for (String substring : longestSubstring) {
+				numRepeated += (substring.length()*substring.length() - substring.length())/2;
+			}
+			longestSubstring = getLongestSubstring(inputString);
 		}
-
 		return numRepeated;
 	}
 
-	public static String longestSubstring(String input) {
+	public static List<String> getLongestSubstring(String input) {
+		int low = 1;
+		int high = input.length() - 1;
+		List<String> reapSubstrings;
+		while (high > low) {
+			int midWindow = (low + high) /2;
+			reapSubstrings = repeatedSubstringsOfSize(input, midWindow);
 
+			//conditionals
+			if (reapSubstrings.size() > 0) {
+				low = mid;
+			} else {
+				high = mid;
+			}
+
+		}
+		return reapSubstrings;
+	}
+
+	private static List<String> repeatedSubstringsOfSize(String s, int window) {
+		Map<Integer, Integer> hashToCountMap = new HashMap<>();
+		Map<Integer, String> hashToSubstringMap = new HashMap<>();
+		List<String> allReapSubstrings = new ArrayList<>();
+		RollingHash rollingHash = new RollingHash(26);
+
+		int start = 0;
+		for(int i = 0; i < s.length(); i++) {
+			rollingHash.append(s.charAt(s));
+			if (i >= window) {
+				rollingHash.removeFirst(start);
+				hashToCountMap.put(rollingHash.hash(), hashToCountMap.getOrDefault(rollingHash.hash(), 0) + 1);
+				//vertification may be needed
+				hashToSubstringMap.put(rollingHash.hash(), s.substring(start, i + 1));
+				start++;
+			}
+		}
+
+		for (int hash : hashToCountMap.keySet()) {
+			if (hashToCountMap.get(hash) > 1) allReapSubstrings.add(hashToSubstringMap.get(hash));
+			
+		}
+		return allReapSubstrings;
 	}
 
 	public static void main(String[] args) {
