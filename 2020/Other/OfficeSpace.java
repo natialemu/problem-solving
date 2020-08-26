@@ -4,61 +4,32 @@ import java.io.*;
 /**
 
 
-
-
-Initialize a min PQ based on right end(x2) of the rectangles.
-Initialize a min PQ based on left end(x1)
-initialize a set to keep track of duplicate rectangles
-
-
-for  each rectangle in the min PQ list by left :
-	 
-	while rectangle doesnt overlap with pq right peek and pq right is not empty, {
-		pop from pq right. // if rectangle doesn't overlap with pq, then none of the others with further x1 will overlap
-	
-	}
-	Stack temp
-	while (pq is not empty and pq overlaps ) {
-
-		add the intersection rectangle to a mapping
-		add intersection to min pq based on left
-		add intersection to duplicate rectangles
-		pop from pq right and push to temp
-	}
-
-	add back everything in temp back to pq right
-
-	add rectangle to pq right
-
-
-
-
-
-
-- leaf rectangles are values in the map that are not keys
-
-  Contested space: is just the number of dijoint overlapping rectangles. to be proven
-
-Unallocated space: total are - (area of each rectangle) + contested space
-
-
-map each original rectangle to a list of contested rectangles.
-
-for each rectangle, 
-	- get the number of disjoint spaces it is connected to.
-	- get the total area of the disjoint spaces.
-	original rectangle area - (sum of area of each contested space).
-
 **/
 
 public class OfficeSpace {
 
 	class Rectangle {
 		int x1, y1, x2, y2;
+		public (int x1, int y1, int x2, int y2) {
+			this.x1 = x1;
+			this.x2 = x2;
+			this.x3 = x3;
+			this.x4 = x4;
+		}
 
 		public int area() {
+			return (x2 - x1)* (y2 - y1);
+		}
+
+		public boolean overlaps(Rectangle other) {
 
 		}
+
+		public Rectangle overlappingRegion(Rectangle other) {
+			if (!overlaps(this, other)) return null;
+
+		}
+
 
 	}
 
@@ -66,7 +37,7 @@ public class OfficeSpace {
 
 		Map<String, Rectangle> employeeToCubicleMap = new LinkedHashMap<>();
 		parse(officeSpace, employeeToCubicleMap);
-		Map<Rectangle, Rectangle> overlappingCubiclesMap = new HashMap<>();
+		Map<Rectangle, List<Rectangle>> overlappingCubiclesMap = new HashMap<>();
 		Set<Rectangle> duplicates = new HashSet<>();
 		PriorityQueue<Rectangle> minHeapRight = new PriorityQueue<>((a,b) -> (a.x2 - b.x2));
 		PriorityQueue<Rectangle> minHeapLeft = new PriorityQueue<>((a,b) -> (a.x1 - b.x1));
@@ -76,11 +47,24 @@ public class OfficeSpace {
 		employeeToCubicleMap.forEach((employee, reactangle) -> minHeapLeft.add(rectangle));
 
 		while (!minHeapLeft.isEmpty()) {
-			//TODO
+			Rectangle current = minHeapLeft.pop();
+			while (!minHeapRight.isEmpty() && !current.overlaps(minHeapRight.peek())) minHeapRight.pop();
+			Stack<Rectangle> temp = new Stack<>();
+			while (!minHeapRight.isEmpty() && current.overlaps(minHeapRight.peek())) {
+				Rectangle top = minHeapRight.pop();
+				temp.push(top);
+
+				Rectangle overlapping = current.overlappingRegion(top);
+				minHeapLeft.add(overlapping);
+				duplicate.add(overlapping);
+				List<Rectangle> overlapRectangles = overlappingCubiclesMap.getOrDefault(current, new ArrayList<>());
+
+				overlapRectangles.add(overlapping); 
+				overlappingCubiclesMap.put(current, overlapRectangles);
+			}
 		}
 
 		System.out.println("Total: " + (h*w));
-
 		Map<String, List<Rectangle>> employeeToContenstedSpaceMap = new LinkedHashMap<>();
 		employeeToCubicleMap.forEach((employee, reactangle) -> {
 			employeeToContenstedSpaceMap.put(employee, disjointRectanglesOverlappingWith(rectangle, overlappingCubiclesMap));
@@ -97,7 +81,7 @@ public class OfficeSpace {
 		int totalCubicleSpace = 0;
 		employeeToCubicleMap.forEach((employee, cubicle) -> {
 			totalCubicleSpace += cubicle.area();
-		})
+		});
 
 		int availableSpace = (h*w) - totalCubicleSpace + totalCubicleSpace;
 
@@ -114,10 +98,15 @@ public class OfficeSpace {
 		})
 	}
 
+
 	private static void parse(List<String[]> from, Map<String, Rectangle> to) {
-		//TODO
+		for (int i = 0; i < from.size(); i++) {
+			String[] cubicleInfo = from.get(i);
+			Rectangle r = new (Integer.parseInt(cubicleInfo[1]), Integer.parseInt(cubicleInfo[2]), Integer.parseInt(cubicleInfo[3]), Integer.parseInt(cubicleInfo[4]))
+			to.put(cubicleInfo[0], r);
+		}
 	}
-	private static List<Rectangle> disjointRectanglesOverlappingWith(Rectangle r, Map<Rectangle, Rectangle> overlapMap) {
+	private static List<Rectangle> disjointRectanglesOverlappingWith(Rectangle r, Map<Rectangle, List<Rectangle>> overlapMap) {
 		//TODO
 	}
 
