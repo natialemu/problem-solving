@@ -4,42 +4,7 @@ import java.io.*;
 
 /**
 
-DP pseudocode:
-
-Base case:
-if 1 senator left, return false
-if 0 senator left, return true
-
-recursive case:
-inputs: List of senators S
-memo -> Maps <RemainingSenator, Solution>
-
-decision 1: take 0th out of S and if S/0th valid then recurse and find the solution
-
-decision 2: take 1st out S, and if S/{0, 1} is valid then recurse and find solution
-
-decision 3: put back 0th, and if S/{1} is valid, then recurse and find solution
-
-if either one of the three is true, return true
-if current config is not valid: return false;
-
-
-Greedy algorithm pseudocode:
-Map<Party, Senator> 
-List<Senators> evacPolicy;
-
-PriorityQueue<Party> qp
-if the number of parties is > 2:
-    until two parties remain:
-        get the party with the most senators.
-        remove a senator and add to evac policy
-        put the party back. if there aren't any senators remove it
-
-if the number of parties is 2:
-        get the two parties
-        remove one senator from each party and add to evac Policy
-        put them back
-
+Problem: https://codingcompetitions.withgoogle.com/codejam/round/0000000000201bef/0000000000201c8b
 
 
 **/
@@ -48,25 +13,35 @@ class Senators {
     public void add(int senator) {
         senators.add(senator);
     }
+
+    public List<Integer> senators() {
+        return senators;
+    }
+}
+class Senator {
+    int id;
+    int party;
+
+    public int id() {return id;}
+    public int party() {return party;}
 }
 class RemainingSenators {
-    class Senator {
-        int id;
-        int party;
-    }
+
 
     public RemainingSenators(int[] senators) {
         //TODO
     }
     public Senator evacuateSenator() {
-        //TODO
+        return null;//TODO
 
     }
     public int size() {
+        return -1; //TODO
 
     }
 
     public boolean majorityExists() {
+        return true; //TODO
 
     }
 
@@ -76,11 +51,12 @@ class RemainingSenators {
 
     @Override
     public boolean equals(Object o) {
-
+        return true; //TODO
     }
 
     @Override
     public int hashCode() {
+        return -1; //TODO
 
     }
 }
@@ -94,16 +70,16 @@ public class SenateEvacuation {
     private static List<Senators> evacuateSenatorsDP(RemainingSenators remainingSenators, Map<RemainingSenators, List<Senators>> memo) {
         if (remainingSenators.size() == 1) return null;
         
-        if (problem.remainingSenators == 0) return new ArrayList<>();
+        if (remainingSenators.size() == 0) return new ArrayList<>();
 
         Senator firstEvacuatedSenator = remainingSenators.evacuateSenator();
         Senators currentEvacuatedSenators = new Senators();
         List<Senators> evacuatedSenators;
         if (!remainingSenators.majorityExists()) {
-            List<Senators> evacuatedSenators = memo.containsKey(remainingSenators) ? memo.get(remainingSenators) :evacuateSenatorsDP(remainingSenators, memo);
+            evacuatedSenators = memo.containsKey(remainingSenators) ? memo.get(remainingSenators) :evacuateSenatorsDP(remainingSenators, memo);
             
             if (evacuatedSenators != null) {
-                currentEvacuatedSenators.add(firstEvacuatedSenator);
+                currentEvacuatedSenators.add(firstEvacuatedSenator.id());
                 evacuatedSenators.add(currentEvacuatedSenators);
                 memo.put(remainingSenators, evacuatedSenators);
                 return evacuatedSenators;
@@ -111,9 +87,9 @@ public class SenateEvacuation {
         }
         Senator secondEvacuatedSenator = remainingSenators.evacuateSenator();
         if (!remainingSenators.majorityExists()) {
-            List<Senators> evacuatedSenators = memo.containsKey(remainingSenators) ? memo.get(remainingSenators) :evacuateSenatorsDP(remainingSenators, memo);
+            evacuatedSenators = memo.containsKey(remainingSenators) ? memo.get(remainingSenators) :evacuateSenatorsDP(remainingSenators, memo);
             if (evacuatedSenators != null) {
-                currentEvacuatedSenators.add(secondEvacuatedSenator);
+                currentEvacuatedSenators.add(secondEvacuatedSenator.id());
                 evacuatedSenators.add(currentEvacuatedSenators);
                 memo.put(remainingSenators, evacuatedSenators);
                 return evacuatedSenators;
@@ -121,16 +97,16 @@ public class SenateEvacuation {
         }
         remainingSenators.putBackSenator(firstEvacuatedSenator);
         if (!remainingSenators.majorityExists()) {
-            List<Senators> evacuatedSenators = memo.containsKey(remainingSenators) ? memo.get(remainingSenators) :evacuateSenatorsDP(remainingSenators, memo);
+            evacuatedSenators = memo.containsKey(remainingSenators) ? memo.get(remainingSenators) :evacuateSenatorsDP(remainingSenators, memo);
             if (evacuatedSenators != null) {
-                currentEvacuatedSenators.add(firstEvacuatedSenator);
-                currentEvacuatedSenators.add(secondEvacuatedSenator);
+                currentEvacuatedSenators.add(firstEvacuatedSenator.id());
+                currentEvacuatedSenators.add(secondEvacuatedSenator.id());
                 evacuatedSenators.add(currentEvacuatedSenators);
                 memo.put(remainingSenators, evacuatedSenators);
                 return evacuatedSenators;
             }
         }
-        
+
         remainingSenators.putBackSenator(secondEvacuatedSenator);
         memo.put(remainingSenators, null);
 
@@ -138,9 +114,9 @@ public class SenateEvacuation {
 
     }
 
-    public static List<Senators> evacuateSenatorsGreedy(int[] senators, int N, Map<List<) {
+    public static List<Senators> evacuateSenatorsGreedy(int[] senators, int N) {
         Map<Integer, Integer> partySenateCount = new HashMap<>();
-        for (int i = 0; i < senators; i++) {
+        for (int i = 0; i < senators.length; i++) {
             partySenateCount.put(senators[i], partySenateCount.getOrDefault(senators[i], 0) + 1);
         }
 
@@ -181,7 +157,7 @@ public class SenateEvacuation {
             int N = in.nextInt(); 
             in.nextLine();
 
-            int[] senators= new int[N]
+            int[] senators= new int[N];
             String[] input = in.nextLine().split(" ");
             for (int j = 0; j < N; j++) {
                 senators[j] = Integer.parseInt(input[j]);
@@ -189,6 +165,15 @@ public class SenateEvacuation {
             List<Senators> evacOrder = evacuateSenatorsGreedy(senators, N);
             System.out.println("Case #" + i + ": ");
             print(evacOrder); //TODO: implement
+        }
+    }
+
+    private static void print(List<Senators> evacOrder) {
+        for (Senators senators : evacOrder) {
+            for (Integer senator : senators.senators()) {
+                System.out.print(senator + " ");
+            }
+            System.out.println();
         }
     }
     
