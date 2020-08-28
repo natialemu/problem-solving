@@ -49,13 +49,96 @@ class Senators {
         senators.add(senator);
     }
 }
-public class SenateEvacuation {
+class RemainingSenators {
+    class Senator {
+        int id;
+        int party;
+    }
 
-    public static List<Senators> evacuateSenatorsDP() {
+    public RemainingSenators(int[] senators) {
+        //TODO
+    }
+    public Senator evacuateSenator() {
+        //TODO
+
+    }
+    public int size() {
 
     }
 
-    public static List<Senators> evacuateSenatorsGreedy(int[] senators, in N) {
+    public boolean majorityExists() {
+
+    }
+
+    public void putBackSenator(Senator s) {
+
+    }
+
+    @Override
+    public boolean equals(Object o) {
+
+    }
+
+    @Override
+    public int hashCode() {
+
+    }
+}
+public class SenateEvacuation {
+
+    public static List<Senators> evacuateSenatorsDP(int[] senators, int N) {
+        RemainingSenators remainingSenators = new RemainingSenators(senators);
+        return evacuateSenatorsDP(remainingSenators, new HashMap<>());
+    }
+
+    private static List<Senators> evacuateSenatorsDP(RemainingSenators remainingSenators, Map<RemainingSenators, List<Senators>> memo) {
+        if (remainingSenators.size() == 1) return null;
+        
+        if (problem.remainingSenators == 0) return new ArrayList<>();
+
+        Senator firstEvacuatedSenator = remainingSenators.evacuateSenator();
+        Senators currentEvacuatedSenators = new Senators();
+        List<Senators> evacuatedSenators;
+        if (!remainingSenators.majorityExists()) {
+            List<Senators> evacuatedSenators = memo.containsKey(remainingSenators) ? memo.get(remainingSenators) :evacuateSenatorsDP(remainingSenators, memo);
+            
+            if (evacuatedSenators != null) {
+                currentEvacuatedSenators.add(firstEvacuatedSenator);
+                evacuatedSenators.add(currentEvacuatedSenators);
+                memo.put(remainingSenators, evacuatedSenators);
+                return evacuatedSenators;
+            }
+        }
+        Senator secondEvacuatedSenator = remainingSenators.evacuateSenator();
+        if (!remainingSenators.majorityExists()) {
+            List<Senators> evacuatedSenators = memo.containsKey(remainingSenators) ? memo.get(remainingSenators) :evacuateSenatorsDP(remainingSenators, memo);
+            if (evacuatedSenators != null) {
+                currentEvacuatedSenators.add(secondEvacuatedSenator);
+                evacuatedSenators.add(currentEvacuatedSenators);
+                memo.put(remainingSenators, evacuatedSenators);
+                return evacuatedSenators;
+            }
+        }
+        remainingSenators.putBackSenator(firstEvacuatedSenator);
+        if (!remainingSenators.majorityExists()) {
+            List<Senators> evacuatedSenators = memo.containsKey(remainingSenators) ? memo.get(remainingSenators) :evacuateSenatorsDP(remainingSenators, memo);
+            if (evacuatedSenators != null) {
+                currentEvacuatedSenators.add(firstEvacuatedSenator);
+                currentEvacuatedSenators.add(secondEvacuatedSenator);
+                evacuatedSenators.add(currentEvacuatedSenators);
+                memo.put(remainingSenators, evacuatedSenators);
+                return evacuatedSenators;
+            }
+        }
+        
+        remainingSenators.putBackSenator(secondEvacuatedSenator);
+        memo.put(remainingSenators, null);
+
+        return null;
+
+    }
+
+    public static List<Senators> evacuateSenatorsGreedy(int[] senators, int N, Map<List<) {
         Map<Integer, Integer> partySenateCount = new HashMap<>();
         for (int i = 0; i < senators; i++) {
             partySenateCount.put(senators[i], partySenateCount.getOrDefault(senators[i], 0) + 1);
