@@ -164,11 +164,13 @@ public class CloseMatch {
 	public static void main(String[] args) {
 		Scanner in = new Scanner(new BufferedReader(new InputStreamReader(System.in)));
         int t = in.nextInt(); 
+        in.nextLine();
         for (int i = 1; i <= t; ++i) {
           String[] scores = in.nextLine().split(" ");
+          if (scores.length != 2) throw new IllegalArgumentException("Invalid number of scores");
           String[] revealedScores = findBestScores(scores);
           System.out.println("Case #" + i + ": ");
-          print(scores);
+          print(revealedScores);
         }
 	}
 
