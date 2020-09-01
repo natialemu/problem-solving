@@ -19,12 +19,12 @@ public class BFFV2 {
 	 	Otherwise, just take the number of kids that make up the cycle.
 	 	**/
 	 	for (List<Integer> cycle : cycles) {
-	 		System.out.println();
+	 		
 	 		if (cycle.size() == 2) {
 	 			int a = cycle.get(0);
 	 			int b = cycle.get(1);
-	 			int longestPath = longestPathFrom(a, reversedGraph);
-	 			longestPath += longestPathFrom(b, reversedGraph);
+	 			int longestPath = longestPathFrom(a, reversedGraph, b);
+	 			longestPath += longestPathFrom(b, reversedGraph, a);
 	 			maxKidsInCircle += longestPath;
 	 		} else {
 	 			maxKidsInCircle += cycle.size();
@@ -77,14 +77,21 @@ public class BFFV2 {
 	 	
 	 	if (cycleDetector.contains(curr)) {
 	 		populateCycleList(cycle, curr, path);
+	 		return;
 	 	}
-	 	if (visisted.contains(curr)) return;
+
+	 	if (visisted.contains(curr)) {
+	 		if (!path.isEmpty()) path.pop();
+	 		return;
+	 	}
+	 	
 	 	cycleDetector.add(curr);
 	 	visisted.add(curr);
 
 	 	for (Integer adj : graph[curr]) {
 	 		cycles(adj, graph, visisted, cycleDetector, cycle, path);
 	 	}
+
 	 }
 
 	 private static void populateCycleList(List<Integer> cycleList, int v, Stack<Integer> path) {
@@ -94,15 +101,17 @@ public class BFFV2 {
 	 	}
 	 }
 
-	 private static int longestPathFrom(int v, ArrayList<Integer>[] graph) {
+	 private static int longestPathFrom(int v, ArrayList<Integer>[] graph, int other) {
 	 	if (graph[v].size() == 0) {
 	 		return 1;
 	 	}
 
-	 	int currLongest = 0;
+	 	int currLongest = 1;
 	 	for (Integer adj : graph[v]) {
-	 		int path = longestPathFrom(adj, graph);
-	 		currLongest = Math.max(path + 1, currLongest);
+	 		if (adj != other) {
+	 			int path = longestPathFrom(adj, graph, other);
+	 			currLongest = Math.max(path + 1, currLongest);
+	 		}
 	 	}
 	 	return currLongest;
 	 }
@@ -124,5 +133,4 @@ public class BFFV2 {
         }
 
 	}
-
 }
